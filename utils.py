@@ -1,7 +1,8 @@
-import cv2
-import numpy as np
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
+from math import sqrt
+import numpy as np
+import cv2
 
 
 # converts opposite points of a rectangle to 1 point and width and height
@@ -18,6 +19,19 @@ def convert_1point_and_dims_to_2points(bbox):
     p1 = (int(bbox[0]), int(bbox[1]))
     p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
     return (p1, p2)
+
+
+# returns the middle point of a rectangle
+def get_middle_point(bbox):
+    (start_x, start_y), (end_x, end_y) = bbox
+    middle_x = int((start_x + end_x) / 2)
+    middle_y = int((start_y + end_y) / 2)
+    return (middle_x, middle_y)
+
+
+# return the euclidean distance between 2 points
+def dist(p1, p2):
+    return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
 
 # detects and returns all the faces

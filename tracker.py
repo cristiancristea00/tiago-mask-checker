@@ -1,16 +1,16 @@
-import argparse
-
-import imutils
-from imutils.video import VideoStream
 from tensorflow.keras.models import load_model
-
+from imutils.video import VideoStream
 from utils import *
+import argparse
+import imutils
 
 ap = argparse.ArgumentParser()
 ap.add_argument('-t', '--tracker', type = str, required = True,
                 help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
 ap.add_argument('-c', '--confidence', type = float, default = 0.5,
-                help = 'minimum probability to filter weak detections')
+                help = 'Minimum probability to filter weak detections')
+ap.add_argument('-T', '--threshold', type = int, default = 40,
+                help = 'Minimum distance between face detection and tracker')
 args = vars(ap.parse_args())
 
 # Set up tracker.
@@ -47,6 +47,7 @@ video = VideoStream(src = 0).start()
 frame = video.read()
 frame = imutils.resize(frame, width = 1000)
 tracker_started = False
+counter = 10
 
 while True:
     # Read a new frame
@@ -55,15 +56,16 @@ while True:
 
     # detect faces in the frame and determine if they are wearing a
     # face mask or not
-    (locs, preds) = detect_and_predict_mask(frame, face_net, mask_net,
-                                            args['confidence'])
+    (locations, predictions) = detect_and_predict_mask(frame, face_net,
+                                                       mask_net,
+                                                       args['confidence'])
 
     # loop over the detected face locations and their corresponding
     # locations
-    for (box, pred) in zip(locs, preds):
+    for (box, predic) in zip(locations, predictions):
         # unpack the bounding box and predictions
         (start_x, start_y, end_x, end_y) = box
-        (with_mask, with_mask_no_nose, with_mask_under, without_mask) = pred
+        (with_mask, with_mask_no_nose, with_mask_under, without_mask) = predic
 
         # determine the class label and color we'll use to draw
         # the bounding box and text
@@ -97,13 +99,28 @@ while True:
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
     # start tracker on the first face detected
-    if not tracker_started and len(locs) != 0:
+    if not tracker_started and len(locations) != 0:
         tracker_started = True
-        bbox = convert_2points_to_1point_and_dims(locs[0])
+        bbox = convert_2points_to_1point_and_dims(locations[0])
         track_ok = tracker.init(frame, bbox)
 
     # Update tracker
     track_ok, bbox = tracker.update(frame)
+
+    # for every frame decrease the counter
+    if tracker_started:
+        counter -= 1
+    # for every 10 frames reposition the tracker on the detected face if the
+    # distance between their centers are under the threshold value
+    if tracker_started and counter == 0 and track_ok:
+        counter = 10
+        tracker_center = get_middle_point(
+            convert_1point_and_dims_to_2points(bbox))
+        (start_x, start_y, end_x, end_y) = locations[0]
+        detector_center = get_middle_point(((start_x, start_y), (end_x, end_y)))
+        if dist(tracker_center, detector_center) <= args['threshold']:
+            bbox = convert_2points_to_1point_and_dims(
+                (start_x, start_y, end_x, end_y))
 
     # Draw bounding box
     if track_ok:
