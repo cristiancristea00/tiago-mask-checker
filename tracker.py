@@ -38,7 +38,6 @@ counter = args['value']
 wait_counter = args['wait']
 
 while True:
-
     # start timer for FPS
     timer = cv2.getTickCount()
 
@@ -102,8 +101,8 @@ while True:
     if counter != 0:
         counter -= 1
 
-    # for every set frames reposition the tracker on the detected face if the
-    # disupdate(frame)tance between their centers are under the threshold value
+    # for every set frames, reposition the tracker on the detected face if the
+    # distance between their centers are under the threshold value
     if tracker_started and counter == 0 and track_ok:
         counter = args['value']
         tracker_center = get_middle_point(
@@ -126,7 +125,7 @@ while True:
         cv2.rectangle(frame, points[0], points[1], (232, 189, 19), 2, 1)
     else:
         # Tracking failure
-        cv2.putText(frame, 'Tracking failure detected', (100, 80),
+        cv2.putText(frame, 'Tracking failure detected!', (100, 80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
 
     # Calculate Frames per second (FPS)

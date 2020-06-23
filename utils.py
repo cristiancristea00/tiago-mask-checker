@@ -66,8 +66,8 @@ def detect_and_predict_mask(frame, face_net, mask_net, set_confidence):
     # initialize our list of faces, their corresponding locations,
     # and the list of predictions from our face mask network
     faces = []
-    locs = []
-    preds = []
+    locations = []
+    predictions = []
 
     # loop over the detections
     for i in range(0, detections.shape[2]):
@@ -100,15 +100,15 @@ def detect_and_predict_mask(frame, face_net, mask_net, set_confidence):
             # add the face and bounding boxes to their respective
             # lists
             faces.append(face)
-            locs.append((start_x, start_y, end_x, end_y))
+            locations.append((start_x, start_y, end_x, end_y))
 
     # only make a predictions if at least one face was detected
     if len(faces) > 0:
         # for faster inference we'll make batch predictions on *all*
         # faces at the same time rather than one-by-one predictions
         # in the above `for` loop
-        preds = mask_net.predict(faces)
+        predictions = mask_net.predict(faces)
 
     # return a 2-tuple of the face locations and their corresponding
     # locations
-    return (locs, preds)
+    return (locations, predictions)
