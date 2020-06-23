@@ -34,13 +34,30 @@ def dist(p1, p2):
     return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
 
+# create tracker by name
+def create_tracker(name):
+    if name == 'BOOSTING':
+        return cv2.TrackerBoosting_create()
+    if name == 'MIL':
+        return cv2.TrackerMIL_create()
+    if name == 'KCF':
+        return cv2.TrackerKCF_create()
+    if name == 'TLD':
+        return cv2.TrackerTLD_create()
+    if name == 'MEDIANFLOW':
+        return cv2.TrackerMedianFlow_create()
+    if name == 'MOSSE':
+        return cv2.TrackerMOSSE_create()
+    if name == 'CSRT':
+        return cv2.TrackerCSRT_create()
+
+
 # detects and returns all the faces
 def detect_and_predict_mask(frame, face_net, mask_net, set_confidence):
     # grab the dimensions of the frame and then construct a blob
     # from it
     (h, w) = frame.shape[:2]
-    blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300),
-                                 (104.0, 177.0, 123.0))
+    blob = cv2.dnn.blobFromImage(frame, 1.0, (400, 400))
 
     # pass the blob through the network and obtain the face detections
     face_net.setInput(blob)

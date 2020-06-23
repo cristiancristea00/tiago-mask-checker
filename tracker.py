@@ -9,25 +9,14 @@ ap.add_argument('-t', '--tracker', type = str, required = True,
                 help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
 ap.add_argument('-c', '--confidence', type = float, default = 0.5,
                 help = 'Minimum probability to filter weak detections')
-ap.add_argument('-T', '--threshold', type = int, default = 40,
+ap.add_argument('-T', '--threshold', type = int, default = 60,
                 help = 'Minimum distance between face detection and tracker')
+ap.add_argument('-v', '--value', type = int, default = 5,
+                help = 'Number of frames between tracker and detector sync')
+ap.add_argument('-w', '--wait', type = int, default = 20,
+                help = 'Number of frames to wait before starting tracker after a '
+                       'face is detected')
 args = vars(ap.parse_args())
-
-# Set up tracker.
-if args['tracker'] == 'BOOSTING':
-    tracker = cv2.TrackerBoosting_create()
-if args['tracker'] == 'MIL':
-    tracker = cv2.TrackerMIL_create()
-if args['tracker'] == 'KCF':
-    tracker = cv2.TrackerKCF_create()
-if args['tracker'] == 'TLD':
-    tracker = cv2.TrackerTLD_create()
-if args['tracker'] == 'MEDIANFLOW':
-    tracker = cv2.TrackerMedianFlow_create()
-if args['tracker'] == 'MOSSE':
-    tracker = cv2.TrackerMOSSE_create()
-if args['tracker'] == 'CSRT':
-    tracker = cv2.TrackerCSRT_create()
 
 # load our serialized face detector model from disk
 print('[INFO] Loading face detector model...')
@@ -41,15 +30,18 @@ mask_net = load_model('mask_detector.model')
 # Start video stream
 print('[INFO] Starting video stream...')
 video = VideoStream(src = 0).start()
-# time.sleep(2.0)
 
-# Read first frame and init tracker
-frame = video.read()
-frame = imutils.resize(frame, width = 1000)
+# init tracker
+tracker = create_tracker(args['tracker'])
 tracker_started = False
-counter = 10
+counter = args['value']
+wait_counter = args['wait']
 
 while True:
+
+    # start timer for FPS
+    timer = cv2.getTickCount()
+
     # Read a new frame
     frame = video.read()
     frame = imutils.resize(frame, width = 1000)
@@ -93,13 +85,12 @@ while True:
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
         cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), color, 2)
 
-    # Start timer
-    timer = cv2.getTickCount()
-    # Calculate Frames per second (FPS)
-    fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
+    # decrement the wait counter for every frame where a face is detected
+    if len(locations) != 0 and wait_counter != 0:
+        wait_counter -= 1
 
     # start tracker on the first face detected
-    if not tracker_started and len(locations) != 0:
+    if not tracker_started and len(locations) != 0 and wait_counter == 0:
         tracker_started = True
         bbox = convert_2points_to_1point_and_dims(locations[0])
         track_ok = tracker.init(frame, bbox)
@@ -108,29 +99,38 @@ while True:
     track_ok, bbox = tracker.update(frame)
 
     # for every frame decrease the counter
-    if tracker_started:
+    if counter != 0:
         counter -= 1
-    # for every 10 frames reposition the tracker on the detected face if the
-    # distance between their centers are under the threshold value
+
+    # for every set frames reposition the tracker on the detected face if the
+    # disupdate(frame)tance between their centers are under the threshold value
     if tracker_started and counter == 0 and track_ok:
-        counter = 10
+        counter = args['value']
         tracker_center = get_middle_point(
             convert_1point_and_dims_to_2points(bbox))
-        (start_x, start_y, end_x, end_y) = locations[0]
-        detector_center = get_middle_point(((start_x, start_y), (end_x, end_y)))
-        if dist(tracker_center, detector_center) <= args['threshold']:
-            bbox = convert_2points_to_1point_and_dims(
-                (start_x, start_y, end_x, end_y))
+        for box in locations:
+            (start_x, start_y, end_x, end_y) = box
+            detector_center = get_middle_point(
+                ((start_x, start_y), (end_x, end_y)))
+            if dist(tracker_center, detector_center) <= args['threshold']:
+                bbox = convert_2points_to_1point_and_dims(
+                    (start_x, start_y, end_x, end_y))
+                tracker = create_tracker(args['tracker'])
+                track_ok = tracker.init(frame, bbox)
+                break
 
     # Draw bounding box
     if track_ok:
         # Tracking success
         points = convert_1point_and_dims_to_2points(bbox)
-        cv2.rectangle(frame, points[0], points[1], (255, 0, 0), 2, 1)
+        cv2.rectangle(frame, points[0], points[1], (232, 189, 19), 2, 1)
     else:
         # Tracking failure
         cv2.putText(frame, 'Tracking failure detected', (100, 80),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+
+    # Calculate Frames per second (FPS)
+    fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
     # Display tracker type on frame
     cv2.putText(frame, args['tracker'] + ' Tracker', (100, 20),
