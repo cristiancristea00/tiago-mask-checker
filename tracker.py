@@ -5,23 +5,16 @@ import argparse
 import imutils
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-t', '--tracker', type = str, required = True,
-                help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
-ap.add_argument('-c', '--confidence', type = float, default = 0.5,
-                help = 'Minimum probability to filter weak detections')
-ap.add_argument('-T', '--threshold', type = int, default = 60,
-                help = 'Minimum distance between face detection and tracker')
-ap.add_argument('-v', '--value', type = int, default = 5,
-                help = 'Number of frames between tracker and detector sync')
-ap.add_argument('-w', '--wait', type = int, default = 20,
-                help = 'Number of frames to wait before starting tracker after a '
-                       'face is detected')
+ap.add_argument('-t', '--tracker', type = str, required = True, help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
+ap.add_argument('-c', '--confidence', type = float, default = 0.5, help = 'Minimum probability to filter weak detections')
+ap.add_argument('-T', '--threshold', type = int, default = 60, help = 'Minimum distance between face detection and tracker')
+ap.add_argument('-v', '--value', type = int, default = 5, help = 'Number of frames between tracker and detector sync')
+ap.add_argument('-w', '--wait', type = int, default = 20, help = 'Number of frames to wait before starting tracker after a face is detected')
 args = vars(ap.parse_args())
 
 # load our serialized face detector model from disk
 print('[INFO] Loading face detector model...')
-face_net = cv2.dnn.readNet('deploy.prototxt',
-                           'res10_300x300_ssd_iter_140000.caffemodel')
+face_net = cv2.dnn.readNet('deploy.prototxt', 'res10_300x300_ssd_iter_140000.caffemodel')
 
 # load the face mask detector model from disk
 print('[INFO] Loading face mask detector model...')
@@ -47,9 +40,7 @@ while True:
 
     # detect faces in the frame and determine if they are wearing a
     # face mask or not
-    (locations, predictions) = detect_and_predict_mask(frame, face_net,
-                                                       mask_net,
-                                                       args['confidence'])
+    (locations, predictions) = detect_and_predict_mask(frame, face_net, mask_net, args['confidence'])
 
     # loop over the detected face locations and their corresponding
     # locations
@@ -60,8 +51,7 @@ while True:
 
         # determine the class label and color we'll use to draw
         # the bounding box and text
-        max_prob = max(with_mask, with_mask_no_nose, with_mask_under,
-                       without_mask)
+        max_prob = max(with_mask, with_mask_no_nose, with_mask_under, without_mask)
         if max_prob is with_mask:
             label = 'Mask is OK'
             color = (0, 255, 0)  # green
@@ -80,8 +70,7 @@ while True:
 
         # display the label and bounding box rectangle on the output
         # frame
-        cv2.putText(frame, label, (start_x, start_y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+        cv2.putText(frame, label, (start_x, start_y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
         cv2.rectangle(frame, (start_x, start_y), (end_x, end_y), color, 2)
 
     # decrement the wait counter for every frame where a face is detected
@@ -105,15 +94,12 @@ while True:
     # distance between their centers are under the threshold value
     if tracker_started and counter == 0 and track_ok:
         counter = args['value']
-        tracker_center = get_middle_point(
-            convert_1point_and_dims_to_2points(bbox))
+        tracker_center = get_middle_point(convert_1point_and_dims_to_2points(bbox))
         for box in locations:
             (start_x, start_y, end_x, end_y) = box
-            detector_center = get_middle_point(
-                ((start_x, start_y), (end_x, end_y)))
+            detector_center = get_middle_point(((start_x, start_y), (end_x, end_y)))
             if dist(tracker_center, detector_center) <= args['threshold']:
-                bbox = convert_2points_to_1point_and_dims(
-                    (start_x, start_y, end_x, end_y))
+                bbox = convert_2points_to_1point_and_dims((start_x, start_y, end_x, end_y))
                 tracker = create_tracker(args['tracker'])
                 track_ok = tracker.init(frame, bbox)
                 break
@@ -125,19 +111,16 @@ while True:
         cv2.rectangle(frame, points[0], points[1], (232, 189, 19), 2, 1)
     else:
         # Tracking failure
-        cv2.putText(frame, 'Tracking failure detected!', (100, 80),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+        cv2.putText(frame, 'Tracking failure detected!', (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
 
     # Calculate Frames per second (FPS)
     fps = cv2.getTickFrequency() / (cv2.getTickCount() - timer)
 
     # Display tracker type on frame
-    cv2.putText(frame, args['tracker'] + ' Tracker', (100, 20),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+    cv2.putText(frame, args['tracker'] + ' Tracker', (100, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
     # Display FPS on frame
-    cv2.putText(frame, 'FPS: ' + str(int(fps)), (100, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
+    cv2.putText(frame, 'FPS: ' + str(int(fps)), (100, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
 
     # Display result
     cv2.imshow('Video stream', frame)
