@@ -5,7 +5,7 @@ import argparse
 import imutils
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-t', '--tracker', type = str, required = True, help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
+ap.add_argument('-t', '--tracker', type = str, default = 'CSRT', help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
 ap.add_argument('-c', '--confidence', type = float, default = 0.5, help = 'Minimum probability to filter weak detections')
 ap.add_argument('-T', '--threshold', type = int, default = 60, help = 'Minimum distance between face detection and tracker')
 ap.add_argument('-v', '--value', type = int, default = 5, help = 'Number of frames between tracker and detector sync')
