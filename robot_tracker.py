@@ -8,11 +8,11 @@ import imutils
 import os
 
 ap = argparse.ArgumentParser()
-ap.add_argument('-t', '--tracker', type = str, default = 'CSRT', help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
-ap.add_argument('-c', '--confidence', type = float, default = 0.5, help = 'Minimum probability to filter weak detections')
-ap.add_argument('-T', '--threshold', type = int, default = 60, help = 'Minimum distance between face detection and tracker')
-ap.add_argument('-v', '--value', type = int, default = 5, help = 'Number of frames between tracker and detector sync')
-ap.add_argument('-w', '--wait', type = int, default = 20, help = 'Number of frames to wait before starting tracker after a face is detected')
+ap.add_argument('-t', '--tracker', type=str, default='CSRT', help='Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
+ap.add_argument('-c', '--confidence', type=float, default=0.5, help='Minimum probability to filter weak detections')
+ap.add_argument('-T', '--threshold', type=int, default=60, help='Minimum distance between face detection and tracker')
+ap.add_argument('-v', '--value', type=int, default=5, help='Number of frames between tracker and detector sync')
+ap.add_argument('-w', '--wait', type=int, default=20, help='Number of frames to wait before starting tracker after a face is detected')
 args = vars(ap.parse_args())
 
 # load our serialized face detector model from disk
@@ -27,15 +27,18 @@ mask_net = load_model('mask_detector.model')
 global thermal
 global normal
 
+
 def callback_normal(data):
 	global normal
 	normal = cv2.imdecode(np.fromstring(data.data, np.uint8), cv2.IMREAD_COLOR)
 	normal = cv2.resize(normal, (800, 600))
 
+
 def callback_thermal(data):
 	global thermal
 	thermal = cv2.imdecode(np.fromstring(data.data, np.uint8), cv2.IMREAD_COLOR)
 	thermal = cv2.resize(thermal, (800, 600))
+
 
 def video():
 	tracker = create_tracker(args['tracker'])
@@ -116,11 +119,11 @@ def video():
 
 			# Draw bounding box
 			if track_ok:
-			# Tracking success
+				# Tracking success
 				points = convert_1point_and_dims_to_2points(bbox)
 				cv2.rectangle(normal, points[0], points[1], (232, 189, 19), 2, 1)
 			else:
-			# Tracking failure
+				# Tracking failure
 				cv2.putText(normal, 'Tracking failure detected!', (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
 
 			# Display tracker type on frame
@@ -150,13 +153,15 @@ def video():
 	cv2.destroyAllWindows()
 	os._exit(1)
 
+
 def listener():
 	rospy.init_node('listener', anonymous=True)
-	merger = Thread(target = video)
+	merger = Thread(target=video)
 	rospy.Subscriber('/xtion/rgb/image_raw/compressed', CompressedImage, callback_normal)
 	rospy.Subscriber('/optris/thermal_image_view/compressed', CompressedImage, callback_thermal)
 	merger.start()
 	rospy.spin()
+
 
 if __name__ == '__main__':
 	listener()
