@@ -101,14 +101,14 @@ def video():
 			if tracker_started and counter == 0 and track_ok:
 				counter = args['value']
 				tracker_center = get_middle_point(convert_1point_and_dims_to_2points(bbox))
-			for box in locations:
-				(start_x, start_y, end_x, end_y) = box
-				detector_center = get_middle_point(((start_x, start_y), (end_x, end_y)))
-				if dist(tracker_center, detector_center) <= args['threshold']:
-					bbox = convert_2points_to_1point_and_dims((start_x, start_y, end_x, end_y))
-					tracker = create_tracker(args['tracker'])
-					track_ok = tracker.init(normal, bbox)
-					break
+				for box in locations:
+					(start_x, start_y, end_x, end_y) = box
+					detector_center = get_middle_point(((start_x, start_y), (end_x, end_y)))
+					if dist(tracker_center, detector_center) <= args['threshold']:
+						bbox = convert_2points_to_1point_and_dims((start_x, start_y, end_x, end_y))
+						tracker = create_tracker(args['tracker'])
+						track_ok = tracker.init(normal, bbox)
+						break
 
 			# Draw bounding box
 			if track_ok:
