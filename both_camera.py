@@ -1,5 +1,4 @@
 from sensor_msgs.msg import CompressedImage
-from threading import Thread
 import numpy as np
 import rospy
 import cv2
@@ -34,14 +33,14 @@ def video():
 		except NameError:
 			pass
 
-		# Display result
+		# Display the result
 		try:
 			cv2.imshow('Video stream', frame)
 		except UnboundLocalError:
 			pass
-		key = cv2.waitKey(1) & 0xFF
 
 		# Exit if Q pressed
+		key = cv2.waitKey(1) & 0xFF
 		if key == ord('q'):
 			break
 
@@ -51,10 +50,9 @@ def video():
 
 def listener():
 	rospy.init_node('listener', anonymous=True)
-	merger = Thread(target=video)
 	rospy.Subscriber('/xtion/rgb/image_raw/compressed', CompressedImage, callback_normal)
 	rospy.Subscriber('/optris/thermal_image_view/compressed', CompressedImage, callback_thermal)
-	merger.start()
+	video()
 	rospy.spin()
 
 
