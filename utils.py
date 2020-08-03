@@ -26,7 +26,7 @@ class FaceAndMaskDetector:
 		self.mask_net = load_model('mask_detector.model')
 		self.confidence = confidence
 
-	def detect_and_predict_mask(self, frame):
+	def detect_and_predict(self, frame):
 		# grab the dimensions of the frame and then construct a blob
 		# from it
 		(h, w) = frame.shape[:2]
@@ -90,31 +90,31 @@ class FaceAndMaskDetector:
 class Tracker:
 	def __init__(self, name):
 		self.name = name
-		self.tracker = None
 		self.track_ok = False
+		self.internal_tracker = None
 		self.create_tracker()
 
 	def create_tracker(self):
-		if self.name == 'BOOSTING':
-			self.tracker = cv.TrackerBoosting_create()
-		if self.name == 'MIL':
-			self.tracker = cv.TrackerMIL_create()
-		if self.name == 'KCF':
-			self.tracker = cv.TrackerKCF_create()
-		if self.name == 'TLD':
-			self.tracker = cv.TrackerTLD_create()
-		if self.name == 'MEDIANFLOW':
-			self.tracker = cv.TrackerMedianFlow_create()
-		if self.name == 'MOSSE':
-			self.tracker = cv.TrackerMOSSE_create()
 		if self.name == 'CSRT':
-			self.tracker = cv.TrackerCSRT_create()
+			self.internal_tracker = cv.TrackerCSRT_create()
+		elif self.name == 'BOOSTING':
+			self.internal_tracker = cv.TrackerBoosting_create()
+		elif self.name == 'MIL':
+			self.internal_tracker = cv.TrackerMIL_create()
+		elif self.name == 'KCF':
+			self.internal_tracker = cv.TrackerKCF_create()
+		elif self.name == 'TLD':
+			self.internal_tracker = cv.TrackerTLD_create()
+		elif self.name == 'MEDIANFLOW':
+			self.internal_tracker = cv.TrackerMedianFlow_create()
+		elif self.name == 'MOSSE':
+			self.internal_tracker = cv.TrackerMOSSE_create()
 
 	def init(self, image, bbox):
-		return self.tracker.init(image, bbox)
+		return self.internal_tracker.init(image, bbox)
 
 	def update(self, image):
-		return self.tracker.update(image)
+		return self.internal_tracker.update(image)
 
 
 class TemperatureChecker:
@@ -152,7 +152,7 @@ class WaitingForPerson:
 		self.tracker = tracker
 
 	def run_prediction(self, image):
-		locations, predictions = self.face_mask_detector.detect_and_predict_mask(image)
+		locations, predictions = self.face_mask_detector.detect_and_predict(image)
 
 		# Decrement the wait counter for every frame where a face is detected
 		if len(predictions) != 0 and self.wait_counter != 0:
@@ -177,15 +177,13 @@ class WaitingForPerson:
 			self.counter = self.default_counter_init
 			tracker_center = get_center(point_and_dims_to_2points(self.bbox))
 			for box in locations:
-				(start_x, start_y, end_x, end_y) = box
+				start_x, start_y, end_x, end_y = box
 				detector_center = get_center(((start_x, start_y), (end_x, end_y)))
 				if dist(tracker_center, detector_center) <= self.distance_threshold:
-					bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
-					self.tracker = self.tracker.create_tracker()
-					self.tracker.track_ok = self.tracker.init(image, bbox)
+					self.bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
+					self.tracker.create_tracker()
+					self.tracker.track_ok = self.tracker.init(image, self.bbox)
 					break
-
-		return locations, predictions
 
 	def person_in_frame(self):
 		return self.person_detected
@@ -207,7 +205,21 @@ class CheckingPerson(WaitingForPerson):
 	def get_max_state(self):
 		return max(self.states, key = self.states.get)
 
-	def print_message(self, state):
+	@classmethod
+	def prediction_type(cls, prediction):
+		with_mask, with_mask_no_nose, with_mask_under, no_mask = prediction
+		max_prob = max(with_mask, with_mask_no_nose, with_mask_under, no_mask)
+		if max_prob == with_mask:
+			return 'with_mask', max_prob
+		elif max_prob == with_mask_no_nose:
+			return 'with_mask_no_nose', max_prob
+		elif max_prob == with_mask_under:
+			return 'with_mask_under', max_prob
+		else:
+			return 'no_mask', max_prob
+
+	@staticmethod
+	def print_message(state):
 		if state == 'with_mask':
 			print('Your mask is OK. Let\'s check your temperature now.')
 		elif state == 'with_mask_no_nose':
@@ -217,11 +229,89 @@ class CheckingPerson(WaitingForPerson):
 		elif state == 'no_mask':
 			print('You can\'t enter without a mask.')
 
+	@staticmethod
+	def draw_detector(locations, predictions, image):
+		for bbox, prediction in zip(locations, predictions):
+			# Unpack the bounding box and predictions
+			start_x, start_y, end_x, end_y = bbox
+			pred_type, max_prob = CheckingPerson.prediction_type(prediction)
+			if pred_type == 'with_mask':
+				label = 'Mask is OK'
+				color = (0, 255, 0)  # Green
+			elif pred_type == 'with_mask_no_nose':
+				label = 'Cover your nose'
+				color = (15, 219, 250)  # Yellow
+			elif pred_type == 'with_mask_under':
+				label = 'Cover yourself'  # Orange
+				color = (0, 104, 240)
+			else:
+				label = 'NO mask'
+				color = (0, 0, 255)  # Red
+
+			# Include the probability in the label
+			label = f'{label}: {max_prob * 100:.2f}%'
+
+			# Display the label and bounding box rectangle on the output frame
+			cv.putText(image, label, (start_x, start_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+			cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
+			cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
+
+	@staticmethod
+	def draw_tracker(track_ok, image, bbox, tracker_type):
+		if track_ok:
+			# Tracking success
+			points = point_and_dims_to_2points(bbox)
+			cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
+		else:
+			# Tracking failure
+			cv.putText(image, 'Tracking failure detected!', (5, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
+		# Display tracker type on frame
+		cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
+
 	def reset_states(self):
 		self.states = self.default_states.copy()
 
 	def person_in_frame(self):
 		raise AttributeError('\'CheckingPerson\' has no attribute named \'person_in_frame\'')
+
+	def run_prediction(self, image):
+		locations, predictions = self.face_mask_detector.detect_and_predict(image)
+
+		self.draw_detector(locations, predictions, image)
+
+		# Decrement the wait counter for every frame where a face is detected
+		if len(predictions) != 0 and self.wait_counter != 0:
+			self.wait_counter -= 1
+
+		# Start tracker on the first face detected
+		if not self.person_detected and len(predictions) != 0 and self.wait_counter == 0:
+			self.person_detected = True
+			self.bbox = points_to_1point_and_dims(locations[0])
+			self.tracker.track_ok = self.tracker.init(image, self.bbox)
+
+		# Update tracker
+		self.tracker.track_ok, self.bbox = self.tracker.update(image)
+
+		# For every frame decrease the counter
+		if self.counter != 0:
+			self.counter -= 1
+
+		# For every set frames, reposition the tracker on the detected face if
+		# the distance between their centers are under the threshold value
+		if self.person_detected and self.counter == 0 and self.tracker.track_ok:
+			self.counter = self.default_counter_init
+			tracker_center = get_center(point_and_dims_to_2points(self.bbox))
+			for box in locations:
+				start_x, start_y, end_x, end_y = box
+				detector_center = get_center(((start_x, start_y), (end_x, end_y)))
+				if dist(tracker_center, detector_center) <= self.distance_threshold:
+					self.bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
+					self.tracker.create_tracker()
+					self.tracker.track_ok = self.tracker.init(image, self.bbox)
+					break
+
+		self.draw_tracker(self.tracker.track_ok, image, self.bbox, self.tracker.name)
 
 
 # converts opposite points of a rectangle to 1 point and width and height
@@ -251,58 +341,3 @@ def get_center(bbox):
 # return the euclidean distance between 2 points
 def dist(p1, p2):
 	return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
-
-
-def prediction_type(prediction):
-	with_mask, with_mask_no_nose, with_mask_under, no_mask = prediction
-	max_prob = max(with_mask, with_mask_no_nose, with_mask_under, no_mask)
-	if max_prob == with_mask:
-		return 'with_mask', max_prob
-	elif max_prob == with_mask_no_nose:
-		return 'with_mask_no_nose', max_prob
-	elif max_prob == with_mask_under:
-		return 'with_mask_under', max_prob
-	else:
-		return 'no_mask', max_prob
-
-
-def draw_boxes(locations, predictions, image):
-	for bbox, prediction in zip(locations, predictions):
-		# Unpack the bounding box and predictions
-		start_x, start_y, end_x, end_y = bbox
-		type, max_prob = prediction_type(prediction)
-		if type == 'with_mask':
-			label = 'Mask is OK'
-			color = (0, 255, 0)  # Green
-		elif type == 'with_mask_no_nose':
-			label = 'Cover your nose'
-			color = (15, 219, 250)  # Yellow
-		elif type == 'with_mask_under':
-			label = 'Cover yourself'  # Orange
-			color = (0, 104, 240)
-		else:
-			label = 'NO mask'
-			color = (0, 0, 255)  # Red
-
-		# Include the probability in the label
-		label = '{}: {:.2f}%'.format(label, max_prob * 100)
-
-		# Display the label and bounding box rectangle on the output frame
-		cv.putText(image, label, (start_x, start_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-		cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
-		cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
-		return image
-
-
-def draw_tracker(track_ok, image, bboxes, tracker_type):
-	if track_ok:
-		# Tracking success
-		points = point_and_dims_to_2points(bboxes[0])
-		cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
-	else:
-		# Tracking failure
-		cv.putText(image, 'Tracking failure detected!', (5, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-
-	# Display tracker type on frame
-	cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
-	return image

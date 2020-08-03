@@ -1,30 +1,31 @@
 from sensor_msgs.msg import CompressedImage
 from utils import *
-import warnings
 import argparse
 import rospy
 import sys
 
-warnings.filterwarnings('ignore')
-
-ap = argparse.ArgumentParser()
-ap.add_argument('-t', '--tracker', type = str, default = 'CSRT',
-				help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
-ap.add_argument('-c', '--confidence', type = float, default = 0.5,
-				help = 'Minimum probability to filter weak detections')
-ap.add_argument('-T', '--threshold', type = int, default = 60,
-				help = 'Minimum distance between face detection and tracker')
-ap.add_argument('-v', '--value', type = int, default = 5,
-				help = 'Number of frames between tracker and detector sync')
-ap.add_argument('-w', '--wait', type = int, default = 20,
-				help = 'Number of frames to wait before starting tracker after a face is detected')
-ap.add_argument('-s', '--state', type = int, default = 15,
-				help = 'Number of frames to ait before a message is displayed')
-args = vars(ap.parse_args())
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument('-t', '--tracker', type = str, default = 'CSRT',
+						help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
+arg_parser.add_argument('-c', '--confidence', type = float, default = 0.5,
+						help = 'Minimum probability to filter weak detections')
+arg_parser.add_argument('-T', '--threshold', type = int, default = 60,
+						help = 'Minimum distance between face detection and tracker')
+arg_parser.add_argument('-v', '--value', type = int, default = 5,
+						help = 'Number of frames between tracker and detector sync')
+arg_parser.add_argument('-w', '--wait', type = int, default = 20,
+						help = 'Number of frames to wait before starting tracker after a face is detected')
+arg_parser.add_argument('-s', '--state', type = int, default = 15,
+						help = 'Number of frames to ait before a message is displayed')
+args = vars(arg_parser.parse_args())
 
 normal_wrapper = AtomicWrapper()
 temp_wrapper = AtomicWrapper()
 thermal_wrapper = AtomicWrapper()
+
+global thermal
+global normal
+global temp
 
 
 def callback_normal(data):
@@ -51,14 +52,12 @@ def video():
 	global temp
 
 	current_state = 'waiting'
-	locations, predictions = None, None
 
 	tracker = Tracker(args['tracker'])
-	face_and_mask_detector = FaceAndMaskDetector(args['confidence'])
+	detector = FaceAndMaskDetector(args['confidence'])
 	temp_checker = TemperatureChecker()
-	person_waiter = WaitingForPerson(tracker, face_and_mask_detector, args['value'], args['wait'], args['threshold'])
-	person_checker = CheckingPerson(tracker, face_and_mask_detector, args['value'], args['wait'], args['threshold'],
-									args['state'])
+	person_waiter = WaitingForPerson(tracker, detector, args['value'], args['wait'], args['threshold'])
+	person_checker = CheckingPerson(tracker, detector, args['value'], args['wait'], args['threshold'], args['state'])
 
 	while True:
 		# Get current images
@@ -70,18 +69,15 @@ def video():
 		curr_thermal = thermal_wrapper.get()
 
 		if current_state == 'waiting':
-			locations, predictions = person_waiter.run_prediction(curr_normal)
+			person_waiter.run_prediction(curr_normal)
 
-		if person_waiter.person_detected:
+		if person_waiter.person_in_frame():
 			current_state = 'person_detected'
 
 		if current_state == 'person_detected':
-			locations, predictions = person_checker.run_prediction(curr_normal)
-			curr_normal = draw_boxes(locations, predictions, curr_normal)
+			person_checker.run_prediction(curr_normal)
 
-		curr_normal = draw_tracker(tracker.track_ok, curr_normal, locations, args['tracker'])
-
-		frame = np.hstack((curr_normal, curr_thermal))
+		frame = np.vstack((curr_normal, curr_thermal))
 
 		# Display the result
 		cv.imshow('Video stream', frame)
@@ -100,7 +96,6 @@ def listener():
 	rospy.Subscriber('/optris/thermal_image/compressed', CompressedImage, callback_temp)
 	rospy.Subscriber('/optris/thermal_image_view/compressed', CompressedImage, callback_thermal)
 	video()
-	rospy.spin()
 
 
 if __name__ == '__main__':
