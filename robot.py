@@ -1,7 +1,6 @@
 from sensor_msgs.msg import CompressedImage
 from utils import *
 import argparse
-import rospy
 import sys
 
 arg_parser = argparse.ArgumentParser()
@@ -11,12 +10,12 @@ arg_parser.add_argument('-c', '--confidence', type = float, default = 0.5,
 						help = 'Minimum probability to filter weak detections')
 arg_parser.add_argument('-T', '--threshold', type = int, default = 60,
 						help = 'Minimum distance between face detection and tracker')
-arg_parser.add_argument('-v', '--value', type = int, default = 5,
+arg_parser.add_argument('-v', '--value', type = int, default = 1,
 						help = 'Number of frames between tracker and detector sync')
 arg_parser.add_argument('-w', '--wait', type = int, default = 20,
 						help = 'Number of frames to wait before starting tracker after a face is detected')
-arg_parser.add_argument('-s', '--state', type = int, default = 15,
-						help = 'Number of frames to ait before a message is displayed')
+arg_parser.add_argument('-s', '--state', type = int, default = 10,
+						help = 'Number of frames to wait before a message is displayed')
 args = vars(arg_parser.parse_args())
 
 normal_wrapper = AtomicWrapper()
@@ -57,7 +56,8 @@ def video():
 	detector = FaceAndMaskDetector(args['confidence'])
 	temp_checker = TemperatureChecker()
 	person_waiter = WaitingForPerson(tracker, detector, args['value'], args['wait'], args['threshold'])
-	person_checker = CheckingPerson(tracker, detector, args['value'], args['wait'], args['threshold'], args['state'])
+	person_checker = CheckingPerson(tracker, detector, temp_checker, args['value'], args['wait'], args['threshold'],
+									args['state'])
 
 	while True:
 		# Get current images
@@ -75,7 +75,14 @@ def video():
 			current_state = 'person_detected'
 
 		if current_state == 'person_detected':
-			person_checker.run_prediction(curr_normal)
+			person_checker.check_person(curr_normal, curr_temp)
+			if person_checker.mask_ok:
+				print(f'{person_checker.temp_checker.get_temp()} C')
+				current_state = 'waiting'
+				person_waiter.reset()
+				person_checker.reset()
+				tracker.reset()
+				temp_checker.reset()
 
 		frame = np.vstack((curr_normal, curr_thermal))
 
@@ -90,8 +97,8 @@ def video():
 	sys.exit(0)
 
 
-def listener():
-	rospy.init_node('listener', anonymous = True)
+def robot():
+	rospy.init_node('robot', anonymous = True)
 	rospy.Subscriber('/xtion/rgb/image_raw/compressed', CompressedImage, callback_normal)
 	rospy.Subscriber('/optris/thermal_image/compressed', CompressedImage, callback_temp)
 	rospy.Subscriber('/optris/thermal_image_view/compressed', CompressedImage, callback_thermal)
@@ -99,4 +106,4 @@ def listener():
 
 
 if __name__ == '__main__':
-	listener()
+	robot()

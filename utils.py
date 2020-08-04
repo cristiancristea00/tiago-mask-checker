@@ -1,10 +1,13 @@
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
-from threading import Lock
+from control_msgs.msg import PointHeadActionGoal
+from geometry_msgs.msg import Point
+from threading import Lock, Thread
 from math import sqrt
 import numpy as np
 import cv2 as cv
+import rospy
 
 
 class AtomicWrapper:
@@ -116,6 +119,9 @@ class Tracker:
 	def update(self, image):
 		return self.internal_tracker.update(image)
 
+	def reset(self):
+		self.create_tracker()
+
 
 class TemperatureChecker:
 	def __init__(self):
@@ -125,14 +131,17 @@ class TemperatureChecker:
 	def add_data(self, image, start_x, start_y, end_x, end_y):
 		self.temp_data = image
 		try:
-			t = np.mean(image[start_y + 15:end_y - 35, start_x + 14:end_x - 14] - 1000) / 10.0
+			t = np.max(image[start_y + 15:end_y - 35, start_x + 14:end_x - 14] - 1000) / 10.0
 		except ValueError:
 			t = 0
 		if t > 34:
 			self.temps.append(t)
 
 	def get_temp(self):
-		return np.mean(self.temps)
+		return np.round(np.mean(self.temps), 1)
+
+	def reset(self):
+		self.temps.clear()
 
 
 class WaitingForPerson:
@@ -148,11 +157,11 @@ class WaitingForPerson:
 		self.wait_counter = wait_counter_init
 		self.distance_threshold = distance_threshold
 
-		self.face_mask_detector = face_mask
+		self.detector = face_mask
 		self.tracker = tracker
 
 	def run_prediction(self, image):
-		locations, predictions = self.face_mask_detector.detect_and_predict(image)
+		locations, predictions = self.detector.detect_and_predict(image)
 
 		# Decrement the wait counter for every frame where a face is detected
 		if len(predictions) != 0 and self.wait_counter != 0:
@@ -164,33 +173,20 @@ class WaitingForPerson:
 			self.bbox = points_to_1point_and_dims(locations[0])
 			self.tracker.track_ok = self.tracker.init(image, self.bbox)
 
-		# Update tracker
-		self.tracker.track_ok, self.bbox = self.tracker.update(image)
-
-		# For every frame decrease the counter
-		if self.counter != 0:
-			self.counter -= 1
-
-		# For every set frames, reposition the tracker on the detected face if
-		# the distance between their centers are under the threshold value
-		if self.person_detected and self.counter == 0 and self.tracker.track_ok:
-			self.counter = self.default_counter_init
-			tracker_center = get_center(point_and_dims_to_2points(self.bbox))
-			for box in locations:
-				start_x, start_y, end_x, end_y = box
-				detector_center = get_center(((start_x, start_y), (end_x, end_y)))
-				if dist(tracker_center, detector_center) <= self.distance_threshold:
-					self.bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
-					self.tracker.create_tracker()
-					self.tracker.track_ok = self.tracker.init(image, self.bbox)
-					break
-
 	def person_in_frame(self):
 		return self.person_detected
 
+	def reset(self):
+		self.counter = self.default_counter_init
+		self.wait_counter = self.default_wait_counter_init
+
+		self.person_detected = False
+		self.bbox = None
+
 
 class CheckingPerson(WaitingForPerson):
-	def __init__(self, tracker, face_mask, counter_init, wait_counter_init, distance_threshold, state_time):
+	def __init__(self, tracker, face_mask, temp_checker, counter_init, wait_counter_init, distance_threshold,
+				 state_time):
 		WaitingForPerson.__init__(self, tracker, face_mask, counter_init, wait_counter_init, distance_threshold)
 		self.mask_ok = False
 		self.action_said = False
@@ -199,14 +195,19 @@ class CheckingPerson(WaitingForPerson):
 		self.states = self.default_states.copy()
 		self.state_time = state_time
 
+		self.temp_checker = temp_checker
+
 	def add_state(self, state):
 		self.states[state] += 1
 
 	def get_max_state(self):
 		return max(self.states, key = self.states.get)
 
-	@classmethod
-	def prediction_type(cls, prediction):
+	def reset_states(self):
+		self.states = self.default_states.copy()
+
+	@staticmethod
+	def prediction_type(prediction):
 		with_mask, with_mask_no_nose, with_mask_under, no_mask = prediction
 		max_prob = max(with_mask, with_mask_no_nose, with_mask_under, no_mask)
 		if max_prob == with_mask:
@@ -225,7 +226,7 @@ class CheckingPerson(WaitingForPerson):
 		elif state == 'with_mask_no_nose':
 			print('Please cover your nose.')
 		elif state == 'with_mask_under':
-			print('Please don\'t user your mask under your nose.')
+			print('Please don\'t user your mask as a chin guard.')
 		elif state == 'no_mask':
 			print('You can\'t enter without a mask.')
 
@@ -244,7 +245,7 @@ class CheckingPerson(WaitingForPerson):
 			elif pred_type == 'with_mask_under':
 				label = 'Cover yourself'  # Orange
 				color = (0, 104, 240)
-			else:
+			elif pred_type == 'no_mask':
 				label = 'NO mask'
 				color = (0, 0, 255)  # Red
 
@@ -269,26 +270,20 @@ class CheckingPerson(WaitingForPerson):
 		# Display tracker type on frame
 		cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
-	def reset_states(self):
-		self.states = self.default_states.copy()
-
 	def person_in_frame(self):
 		raise AttributeError('\'CheckingPerson\' has no attribute named \'person_in_frame\'')
 
 	def run_prediction(self, image):
-		locations, predictions = self.face_mask_detector.detect_and_predict(image)
+		raise AttributeError('\'CheckingPerson\' has no attribute named \'run_prediction\'')
+
+	def check_person(self, image, temp):
+		locations, predictions = self.detector.detect_and_predict(image)
 
 		self.draw_detector(locations, predictions, image)
 
 		# Decrement the wait counter for every frame where a face is detected
 		if len(predictions) != 0 and self.wait_counter != 0:
 			self.wait_counter -= 1
-
-		# Start tracker on the first face detected
-		if not self.person_detected and len(predictions) != 0 and self.wait_counter == 0:
-			self.person_detected = True
-			self.bbox = points_to_1point_and_dims(locations[0])
-			self.tracker.track_ok = self.tracker.init(image, self.bbox)
 
 		# Update tracker
 		self.tracker.track_ok, self.bbox = self.tracker.update(image)
@@ -299,19 +294,41 @@ class CheckingPerson(WaitingForPerson):
 
 		# For every set frames, reposition the tracker on the detected face if
 		# the distance between their centers are under the threshold value
-		if self.person_detected and self.counter == 0 and self.tracker.track_ok:
+		if self.counter == 0 and self.tracker.track_ok:
 			self.counter = self.default_counter_init
 			tracker_center = get_center(point_and_dims_to_2points(self.bbox))
-			for box in locations:
+			for box, prediction in zip(locations, predictions):
 				start_x, start_y, end_x, end_y = box
 				detector_center = get_center(((start_x, start_y), (end_x, end_y)))
 				if dist(tracker_center, detector_center) <= self.distance_threshold:
 					self.bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
 					self.tracker.create_tracker()
 					self.tracker.track_ok = self.tracker.init(image, self.bbox)
+
+					self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)
+					pred_type, _ = self.prediction_type(prediction)
+					self.add_state(pred_type)
+					max_state = self.get_max_state()
+					if not self.action_said and self.states[max_state] >= self.state_time:
+						self.print_message(max_state)
+						self.action_said = True
+						if max_state == 'with_mask':
+							self.mask_ok = True
+					elif self.action_said and self.states[max_state] >= self.state_time:
+						if max_state == 'with_mask':
+							print('You are okay now. Let\'s check your temperature.')
+							self.mask_ok = True
+						else:
+							self.reset_states()
 					break
 
 		self.draw_tracker(self.tracker.track_ok, image, self.bbox, self.tracker.name)
+
+	def reset(self):
+		WaitingForPerson.reset(self)
+		self.mask_ok = False
+		self.action_said = False
+		self.states = self.default_states.copy()
 
 
 # converts opposite points of a rectangle to 1 point and width and height
@@ -333,9 +350,9 @@ def point_and_dims_to_2points(bbox):
 # returns the middle point of a rectangle
 def get_center(bbox):
 	(start_x, start_y), (end_x, end_y) = bbox
-	middle_x = int((start_x + end_x) / 2)
-	middle_y = int((start_y + end_y) / 2)
-	return middle_x, middle_y
+	center_x = int((start_x + end_x) / 2)
+	center_y = int((start_y + end_y) / 2)
+	return center_x, center_y
 
 
 # return the euclidean distance between 2 points
