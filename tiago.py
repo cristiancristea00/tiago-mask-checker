@@ -6,17 +6,17 @@ import sys
 # Defines the command line arguments
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument('-t', '--tracker', type = str, default = 'CSRT',
-						help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT')
+						help = 'Tracker type: BOOSTING/MIL/KCF/TLD/MEDIANFLOW/MOSSE/CSRT.')
 arg_parser.add_argument('-c', '--confidence', type = float, default = 0.5,
-						help = 'Minimum probability to filter weak detections')
+						help = 'Minimum probability to filter weak detections.')
 arg_parser.add_argument('-T', '--threshold', type = int, default = 60,
-						help = 'Minimum distance between face detection and tracker')
+						help = 'Minimum distance between the bounding boxes of the detector and tracker.')
 arg_parser.add_argument('-v', '--value', type = int, default = 1,
-						help = 'Number of frames between tracker and detector sync')
+						help = 'Number of frames between tracker and detector sync.')
 arg_parser.add_argument('-w', '--wait', type = int, default = 20,
-						help = 'Number of frames to wait before starting tracker after a face is detected')
+						help = 'Number of frames to wait before starting the tracker after a face is detected.')
 arg_parser.add_argument('-s', '--state', type = int, default = 10,
-						help = 'Number of frames to wait before a message is displayed')
+						help = 'Number of frames to wait before a message is displayed.')
 args = vars(arg_parser.parse_args())
 
 # Initialize the atomic wrappers thar are used to acquire the current frame
