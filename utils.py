@@ -145,18 +145,11 @@ class TemperatureChecker:
 
 
 class WaitingForPerson:
-	def __init__(self, tracker, face_mask, counter_init, wait_counter_init, distance_threshold):
-		self.default_counter_init = counter_init
+	def __init__(self, tracker, face_mask, wait_counter_init):
 		self.default_wait_counter_init = wait_counter_init
-
 		self.person_detected = False
-
 		self.bbox = None
-
-		self.counter = counter_init
 		self.wait_counter = wait_counter_init
-		self.distance_threshold = distance_threshold
-
 		self.detector = face_mask
 		self.tracker = tracker
 
@@ -177,7 +170,6 @@ class WaitingForPerson:
 		return self.person_detected
 
 	def reset(self):
-		self.counter = self.default_counter_init
 		self.wait_counter = self.default_wait_counter_init
 
 		self.person_detected = False
@@ -185,16 +177,16 @@ class WaitingForPerson:
 
 
 class CheckingPerson(WaitingForPerson):
-	def __init__(self, tracker, face_mask, temp_checker, counter_init, wait_counter_init, distance_threshold,
-				 state_time):
-		WaitingForPerson.__init__(self, tracker, face_mask, counter_init, wait_counter_init, distance_threshold)
+	def __init__(self, tracker, face_mask, temp_checker, counter_init, wait_counter_init, dist_threshold, state_time):
+		WaitingForPerson.__init__(self, tracker, face_mask, wait_counter_init)
 		self.mask_ok = False
 		self.action_said = False
-
+		self.default_counter_init = counter_init
 		self.default_states = {'with_mask': 0, 'with_mask_no_nose': 0, 'with_mask_under': 0, 'no_mask': 0}
 		self.states = self.default_states.copy()
 		self.state_time = state_time
-
+		self.distance_threshold = dist_threshold
+		self.counter = counter_init
 		self.temp_checker = temp_checker
 
 	def add_state(self, state):
@@ -232,6 +224,7 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def draw_detector(locations, predictions, image):
+		label, color = None, None
 		for bbox, prediction in zip(locations, predictions):
 			# Unpack the bounding box and predictions
 			start_x, start_y, end_x, end_y = bbox
@@ -326,6 +319,7 @@ class CheckingPerson(WaitingForPerson):
 
 	def reset(self):
 		WaitingForPerson.reset(self)
+		self.counter = self.default_counter_init
 		self.mask_ok = False
 		self.action_said = False
 		self.states = self.default_states.copy()
@@ -358,3 +352,32 @@ def get_center(bbox):
 # return the euclidean distance between 2 points
 def dist(p1, p2):
 	return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+class Look:
+	def __init__(self):
+		self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 1)
+		self.looker = PointHeadActionGoal()
+		self.looker.header.frame_id = '/base_link'
+		self.looker.goal.target.header.frame_id = '/base_link'
+		self.looker.goal.pointing_frame = '/head_2_link'
+		self.looker.goal.max_velocity = 0.3
+		self.look_point = Point()
+		self.look_point.x = 15
+		self.look_point.y = 0
+		self.look_point.z = 0
+		self.looker.goal.target.point = self.look_point
+		self.r = rospy.Rate(5)
+		self.running = True
+		self.look = Thread(target = self.run(), daemon = True)
+
+	def run(self):
+		while self.running:
+			self.pub.publish(self.looker)
+			self.r.sleep()
+
+	def start(self):
+		self.look.start()
+
+	def stop(self):
+		self.look.join()

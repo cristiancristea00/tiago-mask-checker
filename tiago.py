@@ -55,7 +55,7 @@ def video():
 	tracker = Tracker(args['tracker'])
 	detector = FaceAndMaskDetector(args['confidence'])
 	temp_checker = TemperatureChecker()
-	person_waiter = WaitingForPerson(tracker, detector, args['value'], args['wait'], args['threshold'])
+	person_waiter = WaitingForPerson(tracker, detector, args['wait'])
 	person_checker = CheckingPerson(tracker, detector, temp_checker, args['value'], args['wait'], args['threshold'],
 									args['state'])
 
