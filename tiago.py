@@ -79,10 +79,7 @@ def video():
 			if person_checker.mask_ok:
 				print(f'{person_checker.temp_checker.get_temp()} C')
 				current_state = 'waiting'
-				person_waiter.reset()
-				person_checker.reset()
-				tracker.reset()
-				temp_checker.reset()
+				reset(person_waiter, person_checker, tracker, temp_checker)
 
 		frame = np.vstack((curr_normal, curr_thermal))
 

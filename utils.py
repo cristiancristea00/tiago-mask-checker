@@ -228,17 +228,17 @@ class CheckingPerson(WaitingForPerson):
 		for bbox, prediction in zip(locations, predictions):
 			# Unpack the bounding box and predictions
 			start_x, start_y, end_x, end_y = bbox
-			pred_type, max_prob = CheckingPerson.prediction_type(prediction)
-			if pred_type == 'with_mask':
+			prediction_type, max_prob = CheckingPerson.prediction_type(prediction)
+			if prediction_type == 'with_mask':
 				label = 'Mask is OK'
 				color = (0, 255, 0)  # Green
-			elif pred_type == 'with_mask_no_nose':
+			elif prediction_type == 'with_mask_no_nose':
 				label = 'Cover your nose'
 				color = (15, 219, 250)  # Yellow
-			elif pred_type == 'with_mask_under':
+			elif prediction_type == 'with_mask_under':
 				label = 'Cover yourself'  # Orange
 				color = (0, 104, 240)
-			elif pred_type == 'no_mask':
+			elif prediction_type == 'no_mask':
 				label = 'NO mask'
 				color = (0, 0, 255)  # Red
 
@@ -262,12 +262,6 @@ class CheckingPerson(WaitingForPerson):
 
 		# Display tracker type on frame
 		cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
-
-	def person_in_frame(self):
-		raise AttributeError('\'CheckingPerson\' has no attribute named \'person_in_frame\'')
-
-	def run_prediction(self, image):
-		raise AttributeError('\'CheckingPerson\' has no attribute named \'run_prediction\'')
 
 	def check_person(self, image, temp):
 		locations, predictions = self.detector.detect_and_predict(image)
@@ -299,8 +293,8 @@ class CheckingPerson(WaitingForPerson):
 					self.tracker.track_ok = self.tracker.init(image, self.bbox)
 
 					self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)
-					pred_type, _ = self.prediction_type(prediction)
-					self.add_state(pred_type)
+					prediction_type, _ = self.prediction_type(prediction)
+					self.add_state(prediction_type)
 					max_state = self.get_max_state()
 					if not self.action_said and self.states[max_state] >= self.state_time:
 						self.print_message(max_state)
@@ -323,6 +317,12 @@ class CheckingPerson(WaitingForPerson):
 		self.mask_ok = False
 		self.action_said = False
 		self.states = self.default_states.copy()
+
+	def person_in_frame(self):
+		raise AttributeError('\'CheckingPerson\' has no attribute named \'person_in_frame\'')
+
+	def run_prediction(self, image):
+		raise AttributeError('\'CheckingPerson\' has no attribute named \'run_prediction\'')
 
 
 # converts opposite points of a rectangle to 1 point and width and height
@@ -352,6 +352,13 @@ def get_center(bbox):
 # return the euclidean distance between 2 points
 def dist(p1, p2):
 	return sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+
+def reset(person_waiter, person_checker, tracker, temp_checker):
+	person_waiter.reset()
+	person_checker.reset()
+	tracker.reset()
+	temp_checker.reset()
 
 
 class Look:
