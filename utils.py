@@ -27,6 +27,40 @@ class AtomicWrapper:
 		return self.obj.copy()
 
 
+class Looker(Thread):
+	"""Class that that helps the center the camera on the face."""
+
+	def __init__(self):
+		"""Initializes the data stream that sends the instructions to the root
+		and the point that the robot will look at."""
+		Thread.__init__(self)
+		self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 1)
+		self.looker = PointHeadActionGoal()
+		self.looker.header.frame_id = '/base_link'
+		self.looker.goal.target.header.frame_id = '/base_link'
+		self.looker.goal.pointing_frame = '/head_2_link'
+		self.looker.goal.max_velocity = 0.3
+		self.look_point = Point()
+		self.look_point.x = 15
+		self.look_point.y = 0
+		self.look_point.z = 0
+		self.looker.goal.target.point = self.look_point
+		self.r = rospy.Rate(5)
+		self.running = True
+		self.daemon = True
+		self.start()
+
+	def run(self):
+		"""Sends continuously the instructions to the robot."""
+		while self.running:
+			self.pub.publish(self.looker)
+			self.r.sleep()
+
+	def stop(self):
+		"""Stops the infinite loop."""
+		self.running = False
+
+
 class FaceAndMaskDetector:
 	"""Class that encapsulates the functionality of the face and mask detector
 	and it's used to get the predictions of the network."""
@@ -166,7 +200,7 @@ class WaitingForPerson:
 
 	def __init__(self, tracker, face_mask, wait_counter_init):
 		"""Initializes the tracker, detector and the variable that
-		stores if a person is in the frame"""
+		stores if a person is in the frame."""
 		self.default_wait_counter_init = wait_counter_init
 		self.wait_counter = wait_counter_init
 		self.detector = face_mask
@@ -212,7 +246,7 @@ class CheckingPerson(WaitingForPerson):
 		temperature checker, states dictionary that holds the prediction type
 		for some set number of frames, and the variables that hold the
 		information if the instruction was said and if the mask is worn
-		correctly"""
+		correctly."""
 		WaitingForPerson.__init__(self, tracker, face_mask, wait_counter_init)
 		self.default_predictions = {'with_mask': 0, 'with_mask_no_nose': 0, 'with_mask_under': 0, 'no_mask': 0}
 		self.predictions = self.default_predictions.copy()
@@ -282,7 +316,7 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def draw_tracker(track_ok, image, bbox, tracker_type):
-		"""Draws th tracker bounding box on the face"""
+		"""Draws the tracker bounding box on the face."""
 		if track_ok:
 			# Tracking success
 			points = point_and_dims_to_2points(bbox)
@@ -416,32 +450,3 @@ def reset(person_waiter, person_checker, tracker, temp_checker):
 	person_checker.reset()
 	tracker.reset()
 	temp_checker.reset()
-
-
-class Look:
-	def __init__(self):
-		self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 1)
-		self.looker = PointHeadActionGoal()
-		self.looker.header.frame_id = '/base_link'
-		self.looker.goal.target.header.frame_id = '/base_link'
-		self.looker.goal.pointing_frame = '/head_2_link'
-		self.looker.goal.max_velocity = 0.3
-		self.look_point = Point()
-		self.look_point.x = 15
-		self.look_point.y = 0
-		self.look_point.z = 0
-		self.looker.goal.target.point = self.look_point
-		self.r = rospy.Rate(5)
-		self.running = True
-		self.look = Thread(target = self.run(), daemon = True)
-
-	def run(self):
-		while self.running:
-			self.pub.publish(self.looker)
-			self.r.sleep()
-
-	def start(self):
-		self.look.start()
-
-	def stop(self):
-		self.look.join()

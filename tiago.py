@@ -66,6 +66,7 @@ def video():
 	# continuously if the wearer's mask is worn correctly.
 	current_state = 'waiting'
 
+	looker = Looker()
 	tracker = Tracker(args['tracker'])
 	detector = FaceAndMaskDetector(args['confidence'])
 	temp_checker = TemperatureChecker()
@@ -108,13 +109,16 @@ def video():
 		if cv.waitKey(1) & 0xFF == ord('q'):
 			break
 
-	# Close the video stream and exit the program
+	# Close the video stream, stops the thread that centers the camera on the
+	# face and exits the program
 	cv.destroyAllWindows()
+	looker.stop()
+	looker.join()
 	sys.exit(0)
 
 
 def robot():
-	"""Main method that initializes the node and connect to data streams"""
+	"""Main method that initializes the node and connect to data streams."""
 	rospy.init_node('robot', anonymous = True)
 	rospy.Subscriber('/xtion/rgb/image_raw/compressed', CompressedImage, callback_normal)
 	rospy.Subscriber('/optris/thermal_image/compressed', CompressedImage, callback_temp)
