@@ -13,7 +13,7 @@ class WaitingForPerson:
 		self.detector = face_mask
 		self.tracker = tracker
 		self.person_detected = False
-		self.bbox = None
+		self.bounding_box = None
 
 	def run_prediction(self, image):
 		"""Runs the prediction on the current frame and starts the tracker if
@@ -29,8 +29,8 @@ class WaitingForPerson:
 		# detected by modifying the variable 'person_detected'
 		if not self.person_detected and len(predictions) != 0 and self.wait_counter == 0:
 			self.person_detected = True
-			self.bbox = points_to_1point_and_dims(locations[0])
-			self.tracker.track_ok = self.tracker.init(image, self.bbox)
+			self.bounding_box = points_to_1point_and_dims(locations[0])
+			self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
 
 	def person_in_frame(self):
 		"""Checks if a person is in frame."""
@@ -40,4 +40,4 @@ class WaitingForPerson:
 		"""Resets the state to its default parameters."""
 		self.wait_counter = self.default_wait_counter_init
 		self.person_detected = False
-		self.bbox = None
+		self.bounding_box = None

@@ -1,5 +1,5 @@
-from utils.geometry import *
 from utils.waiting_for_person import WaitingForPerson
+from utils.geometry import *
 import cv2 as cv
 
 
@@ -82,11 +82,11 @@ class CheckingPerson(WaitingForPerson):
 			cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
 
 	@staticmethod
-	def draw_tracker(track_ok, image, bbox, tracker_type):
+	def draw_tracker(track_ok, image, bounding_box, tracker_type):
 		"""Draws the tracker bounding box on the face."""
 		if track_ok:
 			# Tracking success
-			points = point_and_dims_to_2points(bbox)
+			points = point_and_dims_to_2points(bounding_box)
 			cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
 		else:
 			# Tracking failure
@@ -119,7 +119,7 @@ class CheckingPerson(WaitingForPerson):
 			self.wait_counter -= 1
 
 		# Update tracker
-		self.tracker.track_ok, self.bbox = self.tracker.update(image)
+		self.tracker.track_ok, self.bounding_box = self.tracker.update(image)
 
 		# For every frame decrease the counter
 		if self.counter != 0:
@@ -131,16 +131,16 @@ class CheckingPerson(WaitingForPerson):
 			# Reset the counter to the default value
 			self.counter = self.default_counter_init
 			# Get the tracker bounding box center
-			tracker_center = get_center(point_and_dims_to_2points(self.bbox))
+			tracker_center = get_center(point_and_dims_to_2points(self.bounding_box))
 			for box, prediction in zip(locations, predictions):
 				start_x, start_y, end_x, end_y = box
 				detector_center = get_center((start_x, start_y, end_x, end_y))
 				# Check if the threshold value is met
 				if dist(tracker_center, detector_center) <= self.distance_threshold:
-					self.bbox = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
+					self.bounding_box = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
 					# Reinitialize the tracker
 					self.tracker.create_tracker()
-					self.tracker.track_ok = self.tracker.init(image, self.bbox)
+					self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
 					# Get the temperature for the current frame
 					self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)
 					# Add the prediction type
@@ -163,7 +163,7 @@ class CheckingPerson(WaitingForPerson):
 							self.reset_predictions()
 					break
 		# Draw the tracker bounding box
-		self.draw_tracker(self.tracker.track_ok, image, self.bbox, self.tracker.name)
+		self.draw_tracker(self.tracker.track_ok, image, self.bounding_box, self.tracker.name)
 
 	def reset(self):
 		"""Resets the state to its default parameters."""

@@ -29,9 +29,9 @@ class Tracker:
 		elif self.name == 'MOSSE':
 			self.internal_tracker = cv.TrackerMOSSE_create()
 
-	def init(self, image, bbox):
+	def init(self, image, bounding_box):
 		"""Initializes the tracker on provided bounding box."""
-		return self.internal_tracker.init(image, bbox)
+		return self.internal_tracker.init(image, bounding_box)
 
 	def update(self, image):
 		"""Updates the tracker on the current bounding box."""
