@@ -1,6 +1,15 @@
 from sensor_msgs.msg import CompressedImage
-from utils import *
+from utils.atomic_wrapper import AtomicWrapper
+from utils.face_and_mask_detector import FaceAndMaskDetector
+from utils.tracker import Tracker
+from utils.temperature_checker import TemperatureChecker
+from utils.looker import Looker
+from utils.waiting_for_person import WaitingForPerson
+from utils.checking_person import CheckingPerson
+import numpy as np
+import cv2 as cv
 import argparse
+import rospy
 import sys
 
 # Defines the command line arguments
@@ -52,6 +61,14 @@ def callback_temp(data):
 	temp_wrapper.set(cv.imdecode(np.fromstring(data.data, np.uint8), cv.IMREAD_ANYDEPTH))
 	global temp
 	temp = cv.resize(temp_wrapper.get(), (350, 235), interpolation = cv.INTER_NEAREST)
+
+
+def reset(person_waiter, person_checker, tracker, temp_checker):
+	"""Resets the instances to their initial state."""
+	person_waiter.reset()
+	person_checker.reset()
+	tracker.reset()
+	temp_checker.reset()
 
 
 def video():
