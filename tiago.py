@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from sensor_msgs.msg import CompressedImage
 from utils.atomic_wrapper import AtomicWrapper
 from utils.face_and_mask_detector import FaceAndMaskDetector
