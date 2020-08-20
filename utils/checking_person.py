@@ -125,7 +125,7 @@ class CheckingPerson(WaitingForPerson):
 		"""
 		self.predictions = self.default_predictions.copy()
 
-	def check_person(self, image, temp):
+	def check_person(self, image, temp, looker):
 		"""
 		Checks the tracked person's mask in the current frame.
 		"""
@@ -154,13 +154,14 @@ class CheckingPerson(WaitingForPerson):
 			tracker_center = get_center(point_and_dims_to_2points(self.bounding_box))
 			for box, prediction in zip(locations, predictions):
 				start_x, start_y, end_x, end_y = box
-				detector_center = get_center((start_x, start_y, end_x, end_y))
+				detector_center = get_center(((start_x, start_y), (end_x, end_y)))
 				# Check if the threshold value is met
 				if dist(tracker_center, detector_center) <= self.distance_threshold:
 					self.bounding_box = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
-					# Reinitialize the tracker
+					# Reinitialize the tracker and make the robot look at person
 					self.tracker.create_tracker()
 					self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
+					looker.point_head(detector_center)
 					# Get the temperature for the current frame
 					self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)
 					# Add the prediction type

@@ -70,14 +70,15 @@ def callback_temp(data):
 	temp = cv.resize(temp_wrapper.get(), (350, 235), interpolation = cv.INTER_NEAREST)
 
 
-def reset(person_waiter, person_checker, tracker, temp_checker):
+def reset(person_waiter, person_checker, tracker, temp_checker, looker):
 	"""
 	Resets the instances to their initial state.
 	"""
 	person_waiter.reset()
 	person_checker.reset()
-	tracker.reset()
 	temp_checker.reset()
+	tracker.reset()
+	looker.reset()
 
 
 def video():
@@ -122,10 +123,10 @@ def video():
 		# While in the 'person_detected' state check if the person is wearing
 		# the mask properly.
 		if current_state == 'person_detected':
-			person_checker.check_person(curr_normal, curr_temp)
+			person_checker.check_person(curr_normal, curr_temp, looker)
 			if person_checker.mask_ok:
 				print(f'{person_checker.temp_checker.get_temp()} C')
-				reset(person_waiter, person_checker, tracker, temp_checker)
+				reset(person_waiter, person_checker, tracker, temp_checker, looker)
 				current_state = 'waiting'
 
 		frame = vstack((curr_normal, curr_thermal))
