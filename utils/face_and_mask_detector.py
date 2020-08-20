@@ -6,18 +6,24 @@ import cv2 as cv
 
 
 class FaceAndMaskDetector:
-	"""Class that encapsulates the functionality of the face and mask detector
-	and it's used to get the predictions of the network."""
+	"""
+	Class that encapsulates the functionality of the face and mask detector and
+	it's used to get the predictions of the network.
+	"""
 
 	def __init__(self, confidence):
-		"""Loads the face and mask models and sets the confidence level."""
+		"""
+		Loads the face and mask models and sets the confidence level.
+		"""
 		self.face_net = cv.dnn.readNet('FaceNet.prototxt', 'FaceNet.caffemodel')
 		self.mask_net = load_model('mask_detector.model')
 		self.confidence = confidence
 
 	def detect_and_predict(self, frame):
-		"""Gets the current frame and returns the predictions and their
-		corresponding locations."""
+		"""
+		Gets the current frame and returns the predictions and their
+		corresponding locations.
+		"""
 		# Grab the dimensions of the frame and then construct a blob from it
 		(h, w) = frame.shape[:2]
 		blob = cv.dnn.blobFromImage(frame, 1.0, (235, 350))

@@ -4,16 +4,20 @@ import cv2 as cv
 
 
 class CheckingPerson(WaitingForPerson):
-	"""Class that describes the state in which the robot is checking if the
+	"""
+	Class that describes the state in which the robot is checking if the
 	person's mask is worn correctly and prompts instructions for the person if
-	the mask is worn incorrectly, the checks the temperature."""
+	the mask is worn incorrectly, the checks the temperature.
+	"""
 
 	def __init__(self, tracker, face_mask, temp_checker, counter_init, wait_counter_init, dist_threshold, state_time):
-		"""Besides what 'WaitingForPerson' initializes, it also initializes the
+		"""
+		Besides what 'WaitingForPerson' initializes, it also initializes the
 		temperature checker, states dictionary that holds the prediction type
 		for some set number of frames, and the variables that hold the
 		information if the instruction was said and if the mask is worn
-		correctly."""
+		correctly.
+		"""
 		WaitingForPerson.__init__(self, tracker, face_mask, wait_counter_init)
 		self.default_predictions = {'with_mask': 0, 'with_mask_no_nose': 0, 'with_mask_under': 0, 'no_mask': 0}
 		self.predictions = self.default_predictions.copy()
@@ -27,7 +31,9 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def prediction_type(prediction):
-		"""Gets the prediction type by checking which is the max probability."""
+		"""
+		Gets the prediction type by checking which is the max probability.
+		"""
 		with_mask, with_mask_no_nose, with_mask_under, no_mask = prediction
 		probability = max(with_mask, with_mask_no_nose, with_mask_under, no_mask)
 		if probability == with_mask:
@@ -41,7 +47,9 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def print_message(prediction_type):
-		"""Print the corresponding message based on the prediction type."""
+		"""
+		Print the corresponding message based on the prediction type.
+		"""
 		if prediction_type == 'with_mask':
 			print('Your mask is OK. Let\'s check your temperature now.')
 		elif prediction_type == 'with_mask_no_nose':
@@ -53,8 +61,10 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def draw_detector(locations, predictions, image):
-		"""Draws the bounding boxes on the detected faces, along with the
-		probabilities of the prediction."""
+		"""
+		Draws the bounding boxes on the detected faces, along with the
+		probabilities of the prediction.
+		"""
 		label, color = None, None
 		for bbox, prediction in zip(locations, predictions):
 			# Unpack the bounding box and predictions
@@ -83,7 +93,9 @@ class CheckingPerson(WaitingForPerson):
 
 	@staticmethod
 	def draw_tracker(track_ok, image, bounding_box, tracker_type):
-		"""Draws the tracker bounding box on the face."""
+		"""
+		Draws the tracker bounding box on the face.
+		"""
 		if track_ok:
 			# Tracking success
 			points = point_and_dims_to_2points(bounding_box)
@@ -96,19 +108,27 @@ class CheckingPerson(WaitingForPerson):
 		cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
 	def add_prediction(self, prediction_type):
-		"""Increment by 1 in the dictionary the prediction type."""
+		"""
+		Increment by 1 in the dictionary the prediction type.
+		"""
 		self.predictions[prediction_type] += 1
 
 	def get_max_prediction(self):
-		"""Gets the maximum prediction."""
+		"""
+		Gets the maximum prediction.
+		"""
 		return max(self.predictions, key = self.predictions.get)
 
 	def reset_predictions(self):
-		"""Resets the predictions dictionary to its default state."""
+		"""
+		Resets the predictions dictionary to its default state.
+		"""
 		self.predictions = self.default_predictions.copy()
 
 	def check_person(self, image, temp):
-		"""Checks the tracked person's mask in the current frame."""
+		"""
+		Checks the tracked person's mask in the current frame.
+		"""
 		locations, predictions = self.detector.detect_and_predict(image)
 
 		# Draw the detector bounding boxes
@@ -166,7 +186,9 @@ class CheckingPerson(WaitingForPerson):
 		self.draw_tracker(self.tracker.track_ok, image, self.bounding_box, self.tracker.name)
 
 	def reset(self):
-		"""Resets the state to its default parameters."""
+		"""
+		Resets the state to its default parameters.
+		"""
 		WaitingForPerson.reset(self)
 		self.counter = self.default_counter_init
 		self.mask_ok = False

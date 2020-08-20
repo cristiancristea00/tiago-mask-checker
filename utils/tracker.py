@@ -2,18 +2,24 @@ import cv2 as cv
 
 
 class Tracker:
-	"""Class that acts as a wrapper for the tracker object that makes it easier
-	to manipulate it."""
+	"""
+	Class that acts as a wrapper for the tracker object that makes it easier to
+	manipulate it.
+	"""
 
 	def __init__(self, name):
-		"""Sets the type of the tracker object and creates it."""
+		"""
+		Sets the type of the tracker object and creates it.
+		"""
 		self.name = name
 		self.track_ok = False
 		self.internal_tracker = None
 		self.create_tracker()
 
 	def create_tracker(self):
-		"""Sets the tracker type based of its name."""
+		"""
+		Sets the tracker type based of its name.
+		"""
 		if self.name == 'CSRT':
 			self.internal_tracker = cv.TrackerCSRT_create()
 		elif self.name == 'BOOSTING':
@@ -30,13 +36,19 @@ class Tracker:
 			self.internal_tracker = cv.TrackerMOSSE_create()
 
 	def init(self, image, bounding_box):
-		"""Initializes the tracker on provided bounding box."""
+		"""
+		Initializes the tracker on provided bounding box.
+		"""
 		return self.internal_tracker.init(image, bounding_box)
 
 	def update(self, image):
-		"""Updates the tracker on the current bounding box."""
+		"""
+		Updates the tracker on the current bounding box.
+		"""
 		return self.internal_tracker.update(image)
 
 	def reset(self):
-		"""Resets the tracker to its default state."""
+		"""
+		Resets the tracker to its default state.
+		"""
 		self.create_tracker()

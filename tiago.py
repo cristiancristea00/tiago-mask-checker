@@ -42,31 +42,39 @@ global temp
 
 
 def callback_normal(data):
-	"""Gets the normal image from the robot, decompress it and crops it to fit
-	the temperature data."""
+	"""
+	Gets the normal image from the robot, decompress it and crops it to fit
+	the temperature data.
+	"""
 	normal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
 	global normal
 	normal = normal_wrapper.get()[120:355, 150:500]
 
 
 def callback_thermal(data):
-	"""Gets the thermal image from the robot, decompress it and rescale to fit
-	the temperature data."""
+	"""
+	Gets the thermal image from the robot, decompress it and rescale to fit
+	the temperature data.
+	"""
 	thermal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
 	global thermal
 	thermal = cv.resize(thermal_wrapper.get(), (350, 235), interpolation = cv.INTER_NEAREST)
 
 
 def callback_temp(data):
-	"""Gets the temperature data from the robot, decompress it and rescale to
-	fit the temperature data."""
+	"""
+	Gets the temperature data from the robot, decompress it and rescale to
+	fit the temperature data.
+	"""
 	temp_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_ANYDEPTH))
 	global temp
 	temp = cv.resize(temp_wrapper.get(), (350, 235), interpolation = cv.INTER_NEAREST)
 
 
 def reset(person_waiter, person_checker, tracker, temp_checker):
-	"""Resets the instances to their initial state."""
+	"""
+	Resets the instances to their initial state.
+	"""
 	person_waiter.reset()
 	person_checker.reset()
 	tracker.reset()
@@ -74,8 +82,10 @@ def reset(person_waiter, person_checker, tracker, temp_checker):
 
 
 def video():
-	"""Principal method of the program that reads the data streams, displays
-	the video streams to the user and other messages."""
+	"""
+	Principal method of the program that reads the data streams, displays
+	the video streams to the user and other messages.
+	"""
 	global thermal
 	global normal
 	global temp
@@ -137,7 +147,9 @@ def video():
 
 
 def robot():
-	"""Main method that initializes the node and connect to data streams."""
+	"""
+	Main method that initializes the node and connect to data streams.
+	"""
 	rospy.init_node('robot', anonymous = True)
 	rospy.Subscriber('/xtion/rgb/image_raw/compressed', CompressedImage, callback_normal)
 	rospy.Subscriber('/optris/thermal_image/compressed', CompressedImage, callback_temp)

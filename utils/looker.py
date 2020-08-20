@@ -7,11 +7,15 @@ import rospy
 
 
 class Looker(Thread):
-	"""Class that that helps the center the camera on the face."""
+	"""
+	Class that that helps the center the camera on the face.
+	"""
 
 	def __init__(self):
-		"""Initializes the data stream that sends the instructions to the root
-		and the point that the robot will look at."""
+		"""
+		Initializes the data stream that sends the instructions to the root and 
+		the point that the robot will look at.
+		"""
 		Thread.__init__(self)
 		self.rate = rospy.Rate(5)
 		self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 1)
@@ -40,18 +44,25 @@ class Looker(Thread):
 		self.start()
 
 	def run(self):
-		"""Sends continuously the instructions to the robot."""
+		"""
+		Sends continuously the instructions to the robot.
+		"""
 		while self.running:
 			self.pub.publish(self.looker)
 			self.rate.sleep()
 
 	def stop(self):
-		"""Stops the infinite loop."""
+		"""
+		Stops the infinite loop.
+		"""
 		self.running = False
 
-	def point_head(self, point_1, point_2):
-		x = (point_1 - self.camera_intrinsics[0, 2]) / (self.camera_intrinsics[0, 0])
-		y = (point_2 - self.camera_intrinsics[1, 2]) / (self.camera_intrinsics[1, 1])
+	def point_head(self, point_x, point_y):
+		"""
+		Sets the goal point to the selected one so the robot will look that way.
+		"""
+		x = (point_x - self.camera_intrinsics[0, 2]) / (self.camera_intrinsics[0, 0])
+		y = (point_y - self.camera_intrinsics[1, 2]) / (self.camera_intrinsics[1, 1])
 		z = 1.0
 
 		self.point.point.x = x * z
@@ -61,6 +72,9 @@ class Looker(Thread):
 		self.looker.goal.target.point = self.point
 
 	def reset(self):
+		"""
+		Resets the looker to its default parameters.
+		"""
 		self.point.point.x = 0.0
 		self.point.point.y = 0.0
 		self.point.point.z = 15.0
