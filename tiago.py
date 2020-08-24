@@ -28,7 +28,7 @@ arg_parser.add_argument('-w', '--wait', type = int, default = 20,
                         help = 'Number of frames to wait before starting the tracker after a face is detected.')
 arg_parser.add_argument('-s', '--state', type = int, default = 10,
                         help = 'Number of frames to wait before a message is displayed.')
-arg_parser.add_argument('-m', '--move', type = int, default = 5,
+arg_parser.add_argument('-m', '--move', type = int, default = 1,
                         help = 'Number of frames to wait before the head moves.')
 args = vars(arg_parser.parse_args())
 
@@ -60,7 +60,7 @@ def callback_thermal(data):
     """
     thermal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
     global thermal
-    thermal = cv.resize(thermal_wrapper.get(), (WIDTH_START - WIDTH_END, HEIGHT_START - HEIGHT_END),
+    thermal = cv.resize(thermal_wrapper.get(), (WIDTH_END - WIDTH_START, HEIGHT_END - HEIGHT_START),
                         interpolation = cv.INTER_NEAREST)
 
 
@@ -71,7 +71,7 @@ def callback_temp(data):
     """
     temp_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_ANYDEPTH))
     global temp
-    temp = cv.resize(temp_wrapper.get(), (WIDTH_START - WIDTH_END, HEIGHT_START - HEIGHT_END),
+    temp = cv.resize(temp_wrapper.get(), (WIDTH_END - WIDTH_START, HEIGHT_END - HEIGHT_START),
                      interpolation = cv.INTER_NEAREST)
 
 
@@ -147,7 +147,6 @@ def video():
     # face and exits the program
     cv.destroyAllWindows()
     looker.stop()
-    looker.join()
     sys.exit(0)
 
 

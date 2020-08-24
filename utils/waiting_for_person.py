@@ -1,4 +1,4 @@
-from utils.geometry import points_to_1point_and_dims
+from utils.geometry import points_to_point_and_dims
 
 
 class WaitingForPerson:
@@ -35,7 +35,7 @@ class WaitingForPerson:
         # detected by modifying the variable 'person_detected'
         if not self.person_detected and len(predictions) != 0 and self.wait_counter == 0:
             self.person_detected = True
-            self.bounding_box = points_to_1point_and_dims(locations[0])
+            self.bounding_box = points_to_point_and_dims(locations[0])
             self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
 
     def person_in_frame(self):

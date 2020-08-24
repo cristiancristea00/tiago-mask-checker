@@ -101,7 +101,7 @@ class CheckingPerson(WaitingForPerson):
         """
         if track_ok:
             # Tracking success
-            points = point_and_dims_to_2points(bounding_box)
+            points = point_and_dims_to_points(bounding_box)
             cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
         else:
             # Tracking failure
@@ -154,7 +154,7 @@ class CheckingPerson(WaitingForPerson):
             # Reset the counter to the default value
             self.counter = self.default_counter_init
             # Get the tracker bounding box center
-            tracker_center = get_center(point_and_dims_to_2points(self.bounding_box))
+            tracker_center = get_center(point_and_dims_to_points(self.bounding_box))
             for box, prediction in zip(locations, predictions):
                 start_x, start_y, end_x, end_y = box
                 detector_center = get_center(((start_x, start_y), (end_x, end_y)))
@@ -162,7 +162,7 @@ class CheckingPerson(WaitingForPerson):
                 if dist(tracker_center, detector_center) <= self.distance_threshold:
                     if self.move_time != 0:
                         self.move_time -= 1
-                    self.bounding_box = points_to_1point_and_dims((start_x, start_y, end_x, end_y))
+                    self.bounding_box = points_to_point_and_dims((start_x, start_y, end_x, end_y))
                     # Reinitialize the tracker and make the robot look at person
                     # if the set number of frames has passed.
                     self.tracker.create_tracker()

@@ -1,13 +1,13 @@
-from typing import Tuple, Final
+from typing import Tuple
 import numpy as np
 
-HEIGHT_START: Final = 120
-HEIGHT_END: Final = 355
-WIDTH_START: Final = 150
-WIDTH_END: Final = 500
+HEIGHT_START = 120
+HEIGHT_END = 355
+WIDTH_START = 150
+WIDTH_END = 500
 
 
-def points_to_1point_and_dims(bounding_box: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
+def points_to_point_and_dims(bounding_box: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
     """
     Converts opposite points of a rectangle to 1 point and its dimensions, width
     and height.
@@ -19,7 +19,7 @@ def points_to_1point_and_dims(bounding_box: Tuple[int, int, int, int]) -> Tuple[
     return box_x, box_y, box_width, box_height
 
 
-def point_and_dims_to_2points(bounding_box: Tuple[int, int, int, int]) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+def point_and_dims_to_points(bounding_box: Tuple[int, int, int, int]) -> Tuple[Tuple[int, int], Tuple[int, int]]:
     """
     Converts 1 point and its dimensions, width and height, of a rectangle to
     opposite points.
