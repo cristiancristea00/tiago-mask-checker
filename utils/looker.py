@@ -2,7 +2,7 @@ from control_msgs.msg import PointHeadActionGoal
 from geometry_msgs.msg import PointStamped
 from sensor_msgs.msg import CameraInfo
 from utils.geometry import HEIGHT_START, WIDTH_START
-from threading import Thread
+from threading import Thread, Lock
 from numpy import array
 import rospy
 
@@ -14,12 +14,19 @@ class Looker(Thread):
 
     def __init__(self):
         """
-        Initializes the data stream that sends the instructions to the root and
+        Initializes the data stream that sends the instructions to the robot and
         the point that the robot will look at.
         """
         Thread.__init__(self)
+        self.daemon = True
+        self.set_point_lock = Lock()
+
         self.rate = rospy.Rate(15)
-        self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 10)
+        self.pub = rospy.Publisher('/head_controller/point_head_action/goal', PointHeadActionGoal, queue_size = 1)
+
+        camera_info_msg = rospy.wait_for_message('/xtion/rgb/camera_info', CameraInfo)
+        self.camera_intrinsics = array(camera_info_msg.K).reshape((3, 3))
+
         self.looker = PointHeadActionGoal()
         self.looker.header.frame_id = '/base_link'
         self.looker.goal.target.header.frame_id = '/base_link'
@@ -29,19 +36,15 @@ class Looker(Thread):
         self.looker.goal.pointing_axis.z = 1.0
         self.looker.goal.max_velocity = 0.3
 
-        self.look_point = PointStamped()
-        self.look_point.header.frame_id = '/xtion_rgb_optical_frame'
-        self.look_point.point.x = 14.0
-        self.look_point.point.y = 0.0
-        self.look_point.point.z = 0.0
+        look_point = PointStamped()
+        look_point.header.frame_id = '/xtion_rgb_optical_frame'
+        look_point.point.x = 0.0
+        look_point.point.y = 20.5
+        look_point.point.z = 1.0
 
-        camera_info_msg = rospy.wait_for_message('/xtion/rgb/camera_info', CameraInfo)
-        self.camera_intrinsics = array(camera_info_msg.K).reshape((3, 3))
-
-        self.looker.goal.target = self.look_point
+        self.looker.goal.target = look_point
 
         self.running = True
-        self.daemon = True
         self.start()
 
     @staticmethod
@@ -77,18 +80,24 @@ class Looker(Thread):
         y = (point[1] - self.camera_intrinsics[1, 2]) / (self.camera_intrinsics[1, 1])
         z = 1.0
 
-        self.look_point.point.x = x * z
-        self.look_point.point.y = y * z
-        self.look_point.point.z = z
+        look_point = PointStamped()
+        look_point.header.frame_id = '/xtion_rgb_optical_frame'
+        look_point.point.x = x * z
+        look_point.point.y = y * z
+        look_point.point.z = z
 
-        self.looker.goal.target = self.look_point
+        with self.set_point_lock:
+            self.looker.goal.target = look_point
 
     def reset(self):
         """
         Resets the looker to its default parameters.
         """
-        self.look_point.point.x = 14.0
-        self.look_point.point.y = 0.0
-        self.look_point.point.z = 0.0
+        look_point = PointStamped()
+        look_point.header.frame_id = '/xtion_rgb_optical_frame'
+        look_point.point.x = 0.0
+        look_point.point.y = 20.5
+        look_point.point.z = 1.0
 
-        self.looker.goal.target = self.look_point
+        with self.set_point_lock:
+            self.looker.goal.target = look_point
