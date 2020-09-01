@@ -128,7 +128,7 @@ class CheckingPerson(WaitingForPerson):
         """
         self.predictions = self.default_predictions.copy()
 
-    def check_person(self, image, temp, looker):
+    def check_person(self, image, temp, looker, image_timestamp):
         """
         Checks the tracked person's mask in the current frame.
         """
@@ -168,7 +168,7 @@ class CheckingPerson(WaitingForPerson):
                     self.tracker.create_tracker()
                     self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
                     if self.move_time == 0:
-                        looker.point_head(detector_center)
+                        looker.point_head(detector_center, image_timestamp)
                         self.move_time = self.default_move_time
                     # Get the temperature for the current frame
                     self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)

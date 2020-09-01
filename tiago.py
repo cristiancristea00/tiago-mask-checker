@@ -37,7 +37,8 @@ normal_wrapper = AtomicWrapper()
 temp_wrapper = AtomicWrapper()
 thermal_wrapper = AtomicWrapper()
 
-# Define the 3 variables that hold the data for the current frame
+# Define the 4 variables that hold the data for the current frame
+global image_timestamp
 global thermal
 global normal
 global temp
@@ -51,6 +52,8 @@ def callback_normal(data):
     normal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
     global normal
     normal = normal_wrapper.get()[HEIGHT_START:HEIGHT_END, WIDTH_START:WIDTH_END]
+    global image_timestamp
+    image_timestamp = data.header.stamp
 
 
 def callback_thermal(data):
@@ -91,6 +94,7 @@ def video():
     Principal method of the program that reads the data streams, displays
     the video streams to the user and other messages.
     """
+    global image_timestamp
     global thermal
     global normal
     global temp
@@ -128,7 +132,7 @@ def video():
         # While in the 'person_detected' state check if the person is wearing
         # the mask properly.
         if current_state == 'person_detected':
-            person_checker.check_person(curr_normal, curr_temp, looker)
+            person_checker.check_person(curr_normal, curr_temp, looker, image_timestamp)
             if person_checker.mask_ok:
                 print(f'{person_checker.temp_checker.get_temp()} C')
                 reset(person_waiter, person_checker, tracker, temp_checker, looker)
