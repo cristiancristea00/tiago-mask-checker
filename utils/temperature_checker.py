@@ -14,7 +14,7 @@ class TemperatureChecker:
         Adds the temperature data from the forehead for the current frame.
         """
         try:
-            t = np.max(image[start_y + 15:end_y - 35, start_x + 14:end_x - 14] - 1000) / 10.0
+            t = np.max(image[start_y + 23:end_y - 43, start_x + 15:end_x - 15] - 1000) / 10.0
         except ValueError:
             t = 0
         if t > 34:
