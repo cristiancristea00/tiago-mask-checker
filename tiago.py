@@ -24,11 +24,11 @@ arg_parser.add_argument('-T', '--threshold', type = int, default = 60,
                         help = 'Minimum distance between the bounding boxes of the detector and tracker.')
 arg_parser.add_argument('-v', '--value', type = int, default = 1,
                         help = 'Number of frames between tracker and detector sync.')
-arg_parser.add_argument('-w', '--wait', type = int, default = 20,
+arg_parser.add_argument('-w', '--wait', type = int, default = 30,
                         help = 'Number of frames to wait before starting the tracker after a face is detected.')
 arg_parser.add_argument('-s', '--state', type = int, default = 10,
                         help = 'Number of frames to wait before a message is displayed.')
-arg_parser.add_argument('-m', '--move', type = int, default = 1,
+arg_parser.add_argument('-m', '--move', type = int, default = 4,
                         help = 'Number of frames to wait before the head moves.')
 args = vars(arg_parser.parse_args())
 
@@ -49,10 +49,10 @@ def callback_normal(data):
     Gets the normal image from the robot, decompress it and crops it to fit
     the temperature data.
     """
-    normal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
     global normal
-    normal = normal_wrapper.get()[HEIGHT_START:HEIGHT_END, WIDTH_START:WIDTH_END]
     global image_timestamp
+    normal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
+    normal = normal_wrapper.get()[HEIGHT_START:HEIGHT_END, WIDTH_START:WIDTH_END]
     image_timestamp = data.header.stamp
 
 
@@ -61,8 +61,8 @@ def callback_thermal(data):
     Gets the thermal image from the robot, decompress it and rescale to fit
     the temperature data.
     """
-    thermal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
     global thermal
+    thermal_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_COLOR))
     thermal = cv.resize(thermal_wrapper.get(), (WIDTH_END - WIDTH_START, HEIGHT_END - HEIGHT_START),
                         interpolation = cv.INTER_NEAREST)
 
@@ -72,8 +72,8 @@ def callback_temp(data):
     Gets the temperature data from the robot, decompress it and rescale to
     fit the temperature data.
     """
-    temp_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_ANYDEPTH))
     global temp
+    temp_wrapper.set(cv.imdecode(fromstring(data.data, uint8), cv.IMREAD_ANYDEPTH))
     temp = cv.resize(temp_wrapper.get(), (WIDTH_END - WIDTH_START, HEIGHT_END - HEIGHT_START),
                      interpolation = cv.INTER_NEAREST)
 
@@ -86,7 +86,7 @@ def reset(person_waiter, person_checker, tracker, temp_checker, looker):
     person_checker.reset()
     temp_checker.reset()
     tracker.reset()
-    looker.reset()
+    looker.stop()
 
 
 def video():
@@ -136,6 +136,7 @@ def video():
             if person_checker.mask_ok:
                 print(f'{person_checker.temp_checker.get_temp()} C')
                 reset(person_waiter, person_checker, tracker, temp_checker, looker)
+                looker = Looker()
                 current_state = 'waiting'
 
         frame = vstack((curr_normal, curr_thermal))

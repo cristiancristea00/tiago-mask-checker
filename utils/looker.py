@@ -36,13 +36,13 @@ class Looker(Thread):
         self.looker.pointing_axis.x = 1.0
         self.looker.pointing_axis.y = 0.0
         self.looker.pointing_axis.z = 0.0
-        self.looker.max_velocity = 0.4
+        self.looker.max_velocity = 0.3
 
         look_point = PointStamped()
         look_point.header.frame_id = '/base_link'
-        look_point.point.x = 20.0
+        look_point.point.x = 25.0
         look_point.point.y = 0.0
-        look_point.point.z = 10.0
+        look_point.point.z = 0.0
 
         self.looker.target = look_point
         self.start()
@@ -76,15 +76,16 @@ class Looker(Thread):
         Sets the goal point to the selected one so the robot will look that way.
         """
         self.running = False
+
         point = Looker.correct_point(point)
 
-        self.looker.target.header.frame_id = '/base_link'
-        self.looker.pointing_frame = '/head_2_link'
+        self.looker.target.header.frame_id = '/xtion_rgb_optical_frame'
+        self.looker.pointing_frame = '/xtion_rgb_optical_frame'
 
         self.looker.pointing_axis.x = 0.0
         self.looker.pointing_axis.y = 0.0
         self.looker.pointing_axis.z = 1.0
-        self.looker.max_velocity = 0.3
+        self.looker.max_velocity = 0.2
 
         look_point = PointStamped()
         look_point.header.frame_id = '/xtion_rgb_optical_frame'
@@ -95,29 +96,3 @@ class Looker(Thread):
 
         self.looker.target = look_point
         self.point_head_goal.send_goal(self.looker)
-        self.rate.sleep()
-
-    def reset(self):
-        """
-        Resets the looker to its default parameters.
-        """
-        self.join()
-
-        self.looker.target.header.frame_id = '/base_link'
-        self.looker.pointing_frame = '/head_2_link'
-
-        self.looker.pointing_axis.x = 1.0
-        self.looker.pointing_axis.y = 0.0
-        self.looker.pointing_axis.z = 0.0
-        self.looker.max_velocity = 0.4
-
-        look_point = PointStamped()
-        look_point.header.frame_id = '/base_link'
-        look_point.point.x = 20.0
-        look_point.point.y = 0.0
-        look_point.point.z = 10.0
-
-        self.looker.target = look_point
-
-        self.running = True
-        self.start()
