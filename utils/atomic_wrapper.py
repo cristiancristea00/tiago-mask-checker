@@ -21,7 +21,7 @@ class ImageAtomicWrapper:
         with self.lock:
             self.image = image.copy()
 
-    def get(self):
+    def get(self) -> ndarray:
         """
         Returns a copy of the object.
         """

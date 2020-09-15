@@ -1,3 +1,4 @@
+from typing import List, Tuple
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
@@ -20,7 +21,8 @@ class FaceAndMaskDetector:
         self.mask_net = load_model('mask_detector.model')
         self.confidence = confidence
 
-    def detect_and_predict(self, frame: ndarray):
+    def detect_and_predict(self, frame: ndarray) -> Tuple[
+        List[Tuple[int, int, int, int]], List[Tuple[float, float, float, float]]]:
         """
         Gets the current frame and returns the predictions and their
         corresponding locations.

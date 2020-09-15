@@ -42,7 +42,7 @@ class CheckingPerson(WaitingForPerson):
         self.mask_ok = False
 
     @staticmethod
-    def prediction_type(prediction: Tuple[float, float, float, float]):
+    def prediction_type(prediction: Tuple[float, float, float, float]) -> Tuple[str, float]:
         """
         Gets the prediction type by checking which is the max probability.
         """

@@ -41,7 +41,7 @@ class WaitingForPerson:
             self.bounding_box = points_to_point_and_dims(locations[0])
             self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
 
-    def person_in_frame(self):
+    def person_in_frame(self) -> bool:
         """
         Checks if a person is in frame.
         """
