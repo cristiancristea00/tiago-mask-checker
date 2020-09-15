@@ -50,7 +50,7 @@ class Looker(Thread):
         self.start()
 
     @staticmethod
-    def correct_point(point: Tuple[int, int]):
+    def correct_point(point: Tuple[int, int]) -> Tuple[int, int]:
         """
         Translate the point according to the cropped image.
         """
