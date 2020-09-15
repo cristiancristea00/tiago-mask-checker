@@ -2,6 +2,7 @@
 from sensor_msgs.msg import CompressedImage
 from utils.atomic_wrapper import AtomicWrapper
 from utils.face_and_mask_detector import FaceAndMaskDetector
+from utils.talker import Talker
 from utils.tracker import Tracker
 from utils.temperature_checker import TemperatureChecker
 from utils.looker import Looker
@@ -105,12 +106,13 @@ def video():
     current_state = 'waiting'
 
     looker = Looker()
+    talker = Talker()
     tracker = Tracker(args['tracker'])
     detector = FaceAndMaskDetector(args['confidence'])
     temp_checker = TemperatureChecker()
     person_waiter = WaitingForPerson(tracker, detector, args['wait'])
-    person_checker = CheckingPerson(tracker, detector, temp_checker, args['value'], args['wait'], args['threshold'],
-                                    args['state'], args['move'])
+    person_checker = CheckingPerson(tracker, talker, detector, temp_checker, args['value'], args['wait'],
+                                    args['threshold'], args['state'], args['move'])
 
     while True:
         # Get current frames
