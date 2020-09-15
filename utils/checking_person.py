@@ -1,5 +1,4 @@
 from utils.waiting_for_person import WaitingForPerson
-from sound_play.libsoundplay import SoundClient
 from utils.geometry import *
 import cv2 as cv
 
@@ -10,15 +9,9 @@ class CheckingPerson(WaitingForPerson):
     person's mask is worn correctly and prompts instructions for the person if
     the mask is worn incorrectly, the checks the temperature.
     """
-    WITH_MASK_SOUND_PATH = None
-    WITH_MASK_NO_NODE_SOUND_PATH = None
-    WITH_MASK_UNDER_SOUND_PATH = None
-    NO_MASK_SOUND_PATH = None
 
-    TEMPERATURE_OKAY_SOUND_PATH = None
-    TEMPERATURE_TOO_HIGH_SOUND_PATH = None
-
-    def __init__(self, tracker, face_mask, temp_checker, counter_init, wait_counter_init, dist_threshold, state_time,
+    def __init__(self, tracker, talk, face_mask, temp_checker, counter_init, wait_counter_init, dist_threshold,
+                 state_time,
                  move_time):
         """
         Besides what 'WaitingForPerson' initializes, it also initializes the
@@ -34,6 +27,7 @@ class CheckingPerson(WaitingForPerson):
         self.default_move_time = move_time
         self.move_time = move_time
         self.counter = counter_init
+        self.talker = talk
         self.temp_checker = temp_checker
         self.distance_threshold = dist_threshold
         self.state_time = state_time
@@ -55,29 +49,6 @@ class CheckingPerson(WaitingForPerson):
             return 'with_mask_under', probability
         else:
             return 'no_mask', probability
-
-    @staticmethod
-    def speak_message(prediction_type):
-        """
-        Play the corresponding message based on the prediction type.
-        """
-        sound_client = SoundClient()
-        sound = None
-
-        if prediction_type == 'with_mask':
-            print('Your mask is OK. Let\'s check your temperature now.')
-            sound = sound_client.waveSound(CheckingPerson.WITH_MASK_SOUND_PATH)
-        elif prediction_type == 'with_mask_no_nose':
-            print('Please cover your nose.')
-            sound = sound_client.waveSound(CheckingPerson.WITH_MASK_NO_NODE_SOUND_PATH)
-        elif prediction_type == 'with_mask_under':
-            print('Please don\'t user your mask as a chin guard.')
-            sound = sound_client.waveSound(CheckingPerson.WITH_MASK_UNDER_SOUND_PATH)
-        elif prediction_type == 'no_mask':
-            print('You can\'t enter without a mask.')
-            sound = sound_client.waveSound(CheckingPerson.NO_MASK_SOUND_PATH)
-
-        sound.play()
 
     @staticmethod
     def draw_detector(locations, predictions, image):
@@ -127,19 +98,34 @@ class CheckingPerson(WaitingForPerson):
         # Display tracker type on frame
         cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
+    def speak_message(self, prediction_type):
+        """
+        Play the corresponding message based on the prediction type.
+        """
+        sentence = None
+
+        if prediction_type == 'with_mask':
+            sentence = 'Your mask is OK. Let\'s check your temperature now.'
+        elif prediction_type == 'with_mask_no_nose':
+            sentence = 'Please cover your nose.'
+        elif prediction_type == 'with_mask_under':
+            sentence = 'Please don\'t user your mask as a chin guard.'
+        elif prediction_type == 'no_mask':
+            sentence = 'You can\'t enter without a mask.'
+
+        self.talker.say(sentence)
+
     def speak_temperature(self):
         """
         Check if the temperature is below the threshold value and speaks the
         corresponding message.
         """
-        sound_client = SoundClient()
-        sound = None
         if self.temp_checker.get_temp() <= 37.3:
-            sound = sound_client.waveSound(CheckingPerson.TEMPERATURE_OKAY_SOUND_PATH)
+            sentence = 'Your temperature is okay. You can enter.'
         else:
-            sound = sound_client.waveSound(CheckingPerson.TEMPERATURE_TOO_HIGH_SOUND_PATH)
+            sentence = 'Your temperature is too high. You can\'t enter!'
 
-        sound.play()
+        self.talker.say(sentence)
 
     def add_prediction(self, prediction_type):
         """
@@ -217,10 +203,8 @@ class CheckingPerson(WaitingForPerson):
                     # mask is worn correctly
                     elif self.action_said and self.predictions[max_state] >= self.state_time:
                         if max_state == 'with_mask':
-                            print('Your mask is OK. Let\'s check your temperature now.')
-                            sound_client = SoundClient()
-                            sound = sound_client.waveSound(CheckingPerson.WITH_MASK_SOUND_PATH)
-                            sound.play()
+                            sentence = 'Your mask is OK. Let\'s check your temperature now.'
+                            self.talker.say(sentence)
                             self.mask_ok = True
                         else:
                             self.reset_predictions()
