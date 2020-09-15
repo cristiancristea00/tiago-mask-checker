@@ -6,7 +6,7 @@ class Talker:
     def __init__(self):
         self.talk = SimpleActionClient('/tts', TtsAction)
 
-    def say(self, text):
+    def say(self, text: str):
         goal = TtsGoal()
         goal.rawtext.lang_id = 'en_GB'
         goal.rawtext.text = text

@@ -1,3 +1,5 @@
+from typing import Tuple
+from numpy import ndarray
 import cv2 as cv
 
 
@@ -7,7 +9,7 @@ class Tracker:
     manipulate it.
     """
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         """
         Sets the type of the tracker object and creates it.
         """
@@ -35,13 +37,13 @@ class Tracker:
         elif self.name == 'MOSSE':
             self.internal_tracker = cv.TrackerMOSSE_create()
 
-    def init(self, image, bounding_box):
+    def init(self, image: ndarray, bounding_box: Tuple[int, int, int, int]):
         """
         Initializes the tracker on provided bounding box.
         """
         return self.internal_tracker.init(image, bounding_box)
 
-    def update(self, image):
+    def update(self, image: ndarray):
         """
         Updates the tracker on the current bounding box.
         """

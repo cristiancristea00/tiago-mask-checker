@@ -1,3 +1,11 @@
+from typing import List
+from numpy import ndarray
+from rospy import Time
+from utils.face_and_mask_detector import FaceAndMaskDetector
+from utils.looker import Looker
+from utils.talker import Talker
+from utils.temperature_checker import TemperatureChecker
+from utils.tracker import Tracker
 from utils.waiting_for_person import WaitingForPerson
 from utils.geometry import *
 import cv2 as cv
@@ -10,9 +18,8 @@ class CheckingPerson(WaitingForPerson):
     the mask is worn incorrectly, the checks the temperature.
     """
 
-    def __init__(self, tracker, talk, face_mask, temp_checker, counter_init, wait_counter_init, dist_threshold,
-                 state_time,
-                 move_time):
+    def __init__(self, tracker: Tracker, talk: Talker, face_mask: FaceAndMaskDetector, temp_checker: TemperatureChecker,
+                 counter_init: int, wait_counter_init: int, dist_threshold: int, state_time: int, move_time: int):
         """
         Besides what 'WaitingForPerson' initializes, it also initializes the
         temperature checker, states dictionary that holds the prediction type
@@ -35,7 +42,7 @@ class CheckingPerson(WaitingForPerson):
         self.mask_ok = False
 
     @staticmethod
-    def prediction_type(prediction):
+    def prediction_type(prediction: Tuple[float, float, float, float]):
         """
         Gets the prediction type by checking which is the max probability.
         """
@@ -51,7 +58,8 @@ class CheckingPerson(WaitingForPerson):
             return 'no_mask', probability
 
     @staticmethod
-    def draw_detector(locations, predictions, image):
+    def draw_detector(locations: List[Tuple[int, int, int, int]], predictions: List[Tuple[float, float, float, float]],
+                      image: ndarray):
         """
         Draws the bounding boxes on the detected faces, along with the
         probabilities of the prediction.
@@ -83,7 +91,7 @@ class CheckingPerson(WaitingForPerson):
             cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
 
     @staticmethod
-    def draw_tracker(track_ok, image, bounding_box, tracker_type):
+    def draw_tracker(track_ok: bool, image: ndarray, bounding_box: Tuple[int, int, int, int], tracker_type: str):
         """
         Draws the tracker bounding box on the face.
         """
@@ -98,7 +106,7 @@ class CheckingPerson(WaitingForPerson):
         # Display tracker type on frame
         cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
-    def speak_message(self, prediction_type):
+    def speak_message(self, prediction_type: str):
         """
         Play the corresponding message based on the prediction type.
         """
@@ -127,13 +135,13 @@ class CheckingPerson(WaitingForPerson):
 
         self.talker.say(sentence)
 
-    def add_prediction(self, prediction_type):
+    def add_prediction(self, prediction_type: str):
         """
         Increment by 1 in the dictionary the prediction type.
         """
         self.predictions[prediction_type] += 1
 
-    def get_max_prediction(self):
+    def get_max_prediction(self) -> str:
         """
         Gets the maximum prediction.
         """
@@ -145,7 +153,7 @@ class CheckingPerson(WaitingForPerson):
         """
         self.predictions = self.default_predictions.copy()
 
-    def check_person(self, image, temp, looker, image_timestamp):
+    def check_person(self, image: ndarray, temp: ndarray, looker: Looker, image_timestamp: Time):
         """
         Checks the tracked person's mask in the current frame.
         """

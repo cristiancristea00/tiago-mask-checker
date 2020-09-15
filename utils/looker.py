@@ -1,5 +1,7 @@
+from typing import Tuple
 from control_msgs.msg import PointHeadAction, PointHeadGoal
 from geometry_msgs.msg import PointStamped
+from rospy import Time
 from sensor_msgs.msg import CameraInfo
 from utils.geometry import HEIGHT_START, WIDTH_START
 from actionlib import SimpleActionClient
@@ -48,7 +50,7 @@ class Looker(Thread):
         self.start()
 
     @staticmethod
-    def correct_point(point):
+    def correct_point(point: Tuple[int, int]):
         """
         Translate the point according to the cropped image.
         """
@@ -71,7 +73,7 @@ class Looker(Thread):
         self.running = False
         self.join()
 
-    def point_head(self, point, image_timestamp):
+    def point_head(self, point: Tuple[int, int], image_timestamp: Time):
         """
         Sets the goal point to the selected one so the robot will look that way.
         """

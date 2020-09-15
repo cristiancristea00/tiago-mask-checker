@@ -1,6 +1,7 @@
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
+from numpy import ndarray
 import numpy as np
 import cv2 as cv
 
@@ -11,7 +12,7 @@ class FaceAndMaskDetector:
     it's used to get the predictions of the network.
     """
 
-    def __init__(self, confidence):
+    def __init__(self, confidence: float):
         """
         Loads the face and mask models and sets the confidence level.
         """
@@ -19,7 +20,7 @@ class FaceAndMaskDetector:
         self.mask_net = load_model('mask_detector.model')
         self.confidence = confidence
 
-    def detect_and_predict(self, frame):
+    def detect_and_predict(self, frame: ndarray):
         """
         Gets the current frame and returns the predictions and their
         corresponding locations.

@@ -1,4 +1,7 @@
+from numpy import ndarray
+from utils.face_and_mask_detector import FaceAndMaskDetector
 from utils.geometry import points_to_point_and_dims
+from utils.tracker import Tracker
 
 
 class WaitingForPerson:
@@ -7,7 +10,7 @@ class WaitingForPerson:
     to enter the frame.
     """
 
-    def __init__(self, tracker, face_mask, wait_counter_init):
+    def __init__(self, tracker: Tracker, face_mask: FaceAndMaskDetector, wait_counter_init: int):
         """
         Initializes the tracker, detector and the variable that
         stores if a person is in the frame.
@@ -19,7 +22,7 @@ class WaitingForPerson:
         self.person_detected = False
         self.bounding_box = None
 
-    def run_prediction(self, image):
+    def run_prediction(self, image: ndarray):
         """
         Runs the prediction on the current frame and starts the tracker if
         a person is detected.
