@@ -135,6 +135,7 @@ def video():
             person_checker.check_person(curr_normal, curr_temp, looker, image_timestamp)
             if person_checker.mask_ok:
                 print(f'{person_checker.temp_checker.get_temp()} C')
+                person_checker.speak_temperature()
                 reset(person_waiter, person_checker, tracker, temp_checker, looker)
                 looker = Looker()
                 current_state = 'waiting'
