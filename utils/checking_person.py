@@ -105,13 +105,13 @@ class CheckingPerson(WaitingForPerson):
         sentence = None
 
         if prediction_type == 'with_mask':
-            sentence = 'Your mask is OK. Let\'s check your temperature now.'
+            sentence = "Your mask is OK. Let's check your temperature now."
         elif prediction_type == 'with_mask_no_nose':
-            sentence = 'Please cover your nose.'
+            sentence = "Please cover your nose."
         elif prediction_type == 'with_mask_under':
-            sentence = 'Please don\'t user your mask as a chin guard.'
+            sentence = "Please don't user your mask as a chin guard."
         elif prediction_type == 'no_mask':
-            sentence = 'You can\'t enter without a mask.'
+            sentence = "You can't enter without a mask."
 
         self.talker.say(sentence)
 
@@ -121,9 +121,9 @@ class CheckingPerson(WaitingForPerson):
         corresponding message.
         """
         if self.temp_checker.get_temp() <= 37.3:
-            sentence = 'Your temperature is okay. You can enter.'
+            sentence = "Your temperature is okay. You can enter."
         else:
-            sentence = 'Your temperature is too high. You can\'t enter!'
+            sentence = "Your temperature is too high. You can't enter!"
 
         self.talker.say(sentence)
 
@@ -203,7 +203,7 @@ class CheckingPerson(WaitingForPerson):
                     # mask is worn correctly
                     elif self.action_said and self.predictions[max_state] >= self.state_time:
                         if max_state == 'with_mask':
-                            sentence = 'Your mask is OK. Let\'s check your temperature now.'
+                            sentence = "Your mask is OK. Let's check your temperature now."
                             self.talker.say(sentence)
                             self.mask_ok = True
                         else:
