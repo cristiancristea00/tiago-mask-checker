@@ -1,3 +1,4 @@
+from numpy import ndarray
 import numpy as np
 
 
@@ -9,7 +10,7 @@ class TemperatureChecker:
     def __init__(self):
         self.temp_data = []
 
-    def add_data(self, image, start_x, start_y, end_x, end_y):
+    def add_data(self, image: ndarray, start_x: int, start_y: int, end_x: int, end_y: int):
         """
         Adds the temperature data from the forehead for the current frame.
         """
@@ -20,7 +21,7 @@ class TemperatureChecker:
         if t > 34:
             self.temp_data.append(t)
 
-    def get_temp(self):
+    def get_temp(self) -> float:
         """
         Gets the temperature as a mean of the acquired data while the person
         was in the frame.

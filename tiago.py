@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from sensor_msgs.msg import CompressedImage
-from utils.atomic_wrapper import AtomicWrapper
+from utils.atomic_wrapper import ImageAtomicWrapper
 from utils.face_and_mask_detector import FaceAndMaskDetector
 from utils.talker import Talker
 from utils.tracker import Tracker
@@ -34,9 +34,9 @@ arg_parser.add_argument('-m', '--move', type = int, default = 4,
 args = vars(arg_parser.parse_args())
 
 # Initialize the atomic wrappers thar are used to acquire the current frame
-normal_wrapper = AtomicWrapper()
-temp_wrapper = AtomicWrapper()
-thermal_wrapper = AtomicWrapper()
+normal_wrapper = ImageAtomicWrapper()
+temp_wrapper = ImageAtomicWrapper()
+thermal_wrapper = ImageAtomicWrapper()
 
 # Define the 4 variables that hold the data for the current frame
 global image_timestamp
@@ -79,7 +79,8 @@ def callback_temp(data):
                      interpolation = cv.INTER_NEAREST)
 
 
-def reset(person_waiter, person_checker, tracker, temp_checker, looker):
+def reset(person_waiter: WaitingForPerson, person_checker: CheckingPerson, tracker: Tracker,
+          temp_checker: TemperatureChecker, looker: Looker):
     """
     Resets the instances to their initial state.
     """

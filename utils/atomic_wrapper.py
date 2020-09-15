@@ -1,7 +1,8 @@
 from threading import Lock
+from numpy import ndarray
 
 
-class AtomicWrapper:
+class ImageAtomicWrapper:
     """
     Wrapper that uses the lock mechanism to acquire the current frame.
     """
@@ -10,18 +11,18 @@ class AtomicWrapper:
         """
         Initialize the object and lock.
         """
-        self.obj = None
+        self.image = None
         self.lock = Lock()
 
-    def set(self, obj):
+    def set(self, image: ndarray):
         """
         Gets a copy of the object with the lock acquired.
         """
         with self.lock:
-            self.obj = obj.copy()
+            self.image = image.copy()
 
     def get(self):
         """
         Returns a copy of the object.
         """
-        return self.obj.copy()
+        return self.image.copy()
