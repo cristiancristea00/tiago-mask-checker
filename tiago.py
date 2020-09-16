@@ -45,7 +45,7 @@ global normal
 global temp
 
 
-def callback_normal(data):
+def callback_normal(data: CompressedImage):
     """
     Gets the normal image from the robot, decompress it and crops it to fit
     the temperature data.
@@ -57,7 +57,7 @@ def callback_normal(data):
     image_timestamp = data.header.stamp
 
 
-def callback_thermal(data):
+def callback_thermal(data: CompressedImage):
     """
     Gets the thermal image from the robot, decompress it and rescale to fit
     the temperature data.
@@ -68,7 +68,7 @@ def callback_thermal(data):
                         interpolation = cv.INTER_NEAREST)
 
 
-def callback_temp(data):
+def callback_temp(data: CompressedImage):
     """
     Gets the temperature data from the robot, decompress it and rescale to
     fit the temperature data.

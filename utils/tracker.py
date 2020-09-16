@@ -43,7 +43,7 @@ class Tracker:
         """
         return self.internal_tracker.init(image, bounding_box)
 
-    def update(self, image: ndarray):
+    def update(self, image: ndarray) -> Tuple[bool, Tuple[int, int, int, int]]:
         """
         Updates the tracker on the current bounding box.
         """
