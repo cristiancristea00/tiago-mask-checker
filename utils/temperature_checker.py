@@ -1,5 +1,6 @@
 from numpy import ndarray
 import numpy as np
+import warnings
 
 
 class TemperatureChecker:
@@ -14,12 +15,11 @@ class TemperatureChecker:
         """
         Adds the temperature data from the forehead for the current frame.
         """
-        try:
-            t = np.max(image[start_y + 23:end_y - 43, start_x + 15:end_x - 15] - 1000) / 10.0
-        except ValueError:
-            t = 0
-        if t > 34:
-            self.temp_data.append(t)
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore',category = RuntimeWarning)
+            t = np.mean(image[start_y + 25:end_y - 45, start_x + 14:end_x - 14] - 1000) / 10.0
+            if t > 34:
+                self.temp_data.append(t)
 
     def get_temp(self) -> float:
         """
