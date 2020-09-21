@@ -208,7 +208,7 @@ class CheckingPerson(WaitingForPerson):
                         if max_state == 'with_mask':
                             self.mask_ok = True
                     # If the message was already printed, check again if the
-                    # mask is worn correctlys
+                    # mask is worn correctly
                     elif self.action_said and self.predictions[max_state] >= self.state_time:
                         if max_state == 'with_mask':
                             sound_file = 'with_mask'
