@@ -1,13 +1,10 @@
-from pal_interaction_msgs.msg import TtsAction, TtsGoal
-from actionlib import SimpleActionClient
+from std_msgs.msg import String
+import rospy
 
 
 class Talker:
     def __init__(self):
-        self.talk = SimpleActionClient('/tts', TtsAction)
+        self.talk = rospy.Publisher('/sound_commands', String, queue_size = 3)
 
-    def say(self, text):
-        goal = TtsGoal()
-        goal.rawtext.lang_id = 'en_GB'
-        goal.rawtext.text = text
-        self.talk.send_goal(goal)
+    def say(self, sound_file: str):
+        self.talk.publish(sound_file)

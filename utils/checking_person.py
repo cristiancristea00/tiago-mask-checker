@@ -110,18 +110,18 @@ class CheckingPerson(WaitingForPerson):
         """
         Play the corresponding message based on the prediction type.
         """
-        sentence = None
+        sound_file = None
 
         if prediction_type == 'with_mask':
-            sentence = "Your mask is OK. Let's check your temperature now."
+            sound_file = 'with_mask'
         elif prediction_type == 'with_mask_no_nose':
-            sentence = "Please cover your nose."
+            sound_file = 'with_mask_no_nose'
         elif prediction_type == 'with_mask_under':
-            sentence = "Please don't user your mask as a chin guard."
+            sound_file = 'with_mask_under'
         elif prediction_type == 'no_mask':
-            sentence = "You can't enter without a mask."
+            sound_file = 'no_mask'
 
-        self.talker.say(sentence)
+        self.talker.say(sound_file)
 
     def speak_temperature(self):
         """
@@ -129,11 +129,11 @@ class CheckingPerson(WaitingForPerson):
         corresponding message.
         """
         if self.temp_checker.get_temp() <= 37.3:
-            sentence = "Your temperature is okay. You can enter."
+            sound_file = 'temp_okay'
         else:
-            sentence = "Your temperature is too high. You can't enter!"
+            sound_file = 'temp_too_high'
 
-        self.talker.say(sentence)
+        self.talker.say(sound_file)
 
     def add_prediction(self, prediction_type: str):
         """
@@ -208,11 +208,11 @@ class CheckingPerson(WaitingForPerson):
                         if max_state == 'with_mask':
                             self.mask_ok = True
                     # If the message was already printed, check again if the
-                    # mask is worn correctly
+                    # mask is worn correctlys
                     elif self.action_said and self.predictions[max_state] >= self.state_time:
                         if max_state == 'with_mask':
-                            sentence = "Your mask is OK. Let's check your temperature now."
-                            self.talker.say(sentence)
+                            sound_file = 'with_mask'
+                            self.talker.say(sound_file)
                             self.mask_ok = True
                         else:
                             self.reset_predictions()
