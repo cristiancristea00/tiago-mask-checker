@@ -9,6 +9,7 @@ from utils.tracker import Tracker
 from utils.waiting_for_person import WaitingForPerson
 from utils.geometry import *
 import cv2 as cv
+from time import time
 
 
 class CheckingPerson(WaitingForPerson):
@@ -40,6 +41,7 @@ class CheckingPerson(WaitingForPerson):
         self.state_time = state_time
         self.action_said = False
         self.mask_ok = False
+        self.last_said = None
 
     @staticmethod
     def prediction_type(prediction: Tuple[float, float, float, float]) -> Tuple[str, float]:
@@ -130,10 +132,10 @@ class CheckingPerson(WaitingForPerson):
         """
         if self.temp_checker.get_temp() <= 37.3:
             sound_file = 'temp_okay'
+            self.talker.say(sound_file)
         else:
             sound_file = 'temp_too_high'
-
-        self.talker.say(sound_file)
+            self.talker.say(sound_file)
 
     def add_prediction(self, prediction_type: str):
         """
@@ -205,17 +207,20 @@ class CheckingPerson(WaitingForPerson):
                     if not self.action_said and self.predictions[max_state] >= self.state_time:
                         self.speak_message(max_state)
                         self.action_said = True
+                        self.last_said = time()
                         if max_state == 'with_mask':
                             self.mask_ok = True
                     # If the message was already printed, check again if the
                     # mask is worn correctly
                     elif self.action_said and self.predictions[max_state] >= self.state_time:
                         if max_state == 'with_mask':
-                            sound_file = 'with_mask'
-                            self.talker.say(sound_file)
                             self.mask_ok = True
                         else:
                             self.reset_predictions()
+
+                    if self.last_said is not None and time() - self.last_said >= 6:
+                        self.action_said = False
+
                     break
         # Draw the tracker bounding box
         self.draw_tracker(self.tracker.track_ok, image, self.bounding_box, self.tracker.name)

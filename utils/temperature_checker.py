@@ -17,7 +17,7 @@ class TemperatureChecker:
         """
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore',category = RuntimeWarning)
-            t = np.mean(image[start_y + 25:end_y - 45, start_x + 14:end_x - 14] - 1000) / 10.0
+            t = np.mean(image[start_y + 15:end_y - 30, start_x + 14:end_x - 14] - 1000) / 10.0
             if t > 34:
                 self.temp_data.append(t)
 

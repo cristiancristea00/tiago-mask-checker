@@ -11,6 +11,7 @@ from utils.checking_person import CheckingPerson
 from utils.geometry import *
 from numpy import fromstring, vstack, uint8
 from argparse import ArgumentParser
+from time import sleep
 import cv2 as cv
 import rospy
 import sys
@@ -138,6 +139,7 @@ def video():
             person_checker.check_person(curr_normal, curr_temp, looker, image_timestamp)
             if person_checker.mask_ok:
                 print(f'{person_checker.temp_checker.get_temp()} C')
+                sleep(3)
                 person_checker.speak_temperature()
                 reset(person_waiter, person_checker, tracker, temp_checker, looker)
                 looker = Looker()

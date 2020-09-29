@@ -42,7 +42,7 @@ class Looker(Thread):
 
         look_point = PointStamped()
         look_point.header.frame_id = '/base_link'
-        look_point.point.x = 25.0
+        look_point.point.x = 40.0
         look_point.point.y = 0.0
         look_point.point.z = 0.0
 
