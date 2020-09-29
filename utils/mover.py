@@ -8,14 +8,14 @@ class Mover:
     def __init__(self):
         self.base_movement = rospy.Publisher('/mobile_base_controller/cmd_vel', Twist, queue_size = 15)
 
-    def move_left(self):
+    def go_left(self):
         self.rotate('counterclockwise', 90, 15)
-        self.move_forward(1.0, 9)
+        self.go_forward(1.0, 9)
         self.rotate('clockwise', 90, 15)
 
-    def move_right(self):
+    def go_right(self):
         self.rotate('clockwise', 90, 15)
-        self.move_forward(1.0, 9)
+        self.go_forward(1.0, 9)
         self.rotate('counterclockwise', 90, 15)
 
     def rotate(self, rotation_type: str, angle: int, speed: int):
@@ -48,7 +48,7 @@ class Mover:
         velocity = Twist()
         self.base_movement.publish(velocity)
 
-    def move_forward(self, speed: float, time: int):
+    def go_forward(self, speed: float, time: int):
         velocity = Twist()
 
         velocity.linear.x = speed
@@ -70,6 +70,6 @@ class Mover:
 if __name__ == '__main__':
     rospy.init_node('test')
     mover = Mover()
-    mover.move_left()
+    mover.go_left()
     rospy.sleep(6)
-    mover.move_right()
+    mover.go_right()
