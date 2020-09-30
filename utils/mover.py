@@ -5,30 +5,43 @@ import rospy
 
 
 class Mover:
+    """
+    Class that incorporates the commands to move the robot.
+    """
+
     def __init__(self):
+        """
+        Define the publisher where the commands are sent.
+        """
         self.base_movement = rospy.Publisher('/mobile_base_controller/cmd_vel', Twist, queue_size = 15)
 
-    def go_left(self):
-        self.rotate('counterclockwise', 90, 15)
-        self.go_forward(1.0, 9)
-        self.rotate('clockwise', 90, 15)
+    def go_left(self, speed: float, time: int):
+        """
+        Makes the robot go to the left by specifying the speed in meters per
+        second and the time in deciseconds.
+        """
+        self.rotate('counterclockwise', 90, 30)
+        self.go_forward(speed, time)
+        self.rotate('clockwise', 90, 30)
 
-    def go_right(self):
-        self.rotate('clockwise', 90, 15)
-        self.go_forward(1.0, 9)
-        self.rotate('counterclockwise', 90, 15)
+    def go_right(self, speed: float, time: int):
+        """
+        Makes the robot go to the right by specifying the speed in meters per
+        second and the time in deciseconds.
+        """
+        self.rotate('clockwise', 90, 30)
+        self.go_forward(speed, time)
+        self.rotate('counterclockwise', 90, 30)
 
     def rotate(self, rotation_type: str, angle: int, speed: int):
+        """
+        Rotates the robot clockwise/counterclockwise by specifying the angle in
+        degrees and the speed in degrees/sec.
+        """
         angular_speed = speed * 2 * pi / 360
         relative_angle = angle * 2 * pi / 360
 
         velocity = Twist()
-
-        velocity.linear.x = 0
-        velocity.linear.y = 0
-        velocity.linear.z = 0
-        velocity.angular.x = 0
-        velocity.angular.y = 0
 
         if rotation_type == 'clockwise':
             velocity.angular.z = -abs(angular_speed)
@@ -49,15 +62,12 @@ class Mover:
         self.base_movement.publish(velocity)
 
     def go_forward(self, speed: float, time: int):
+        """
+        Makes the robot go forward by specifying the speed in meters per second
+        and the time in deciseconds.
+        """
         velocity = Twist()
-
         velocity.linear.x = speed
-        velocity.linear.y = 0.0
-        velocity.linear.z = 0.0
-
-        velocity.angular.x = 0.0
-        velocity.angular.y = 0.0
-        velocity.angular.z = 0.0
 
         for _ in range(time):
             self.base_movement.publish(velocity)
@@ -66,10 +76,18 @@ class Mover:
         velocity = Twist()
         self.base_movement.publish(velocity)
 
+    def go_back(self, speed: float, time: int):
+        """
+        Makes the robot go back by specifying the speed in meters per second and
+        the time in deciseconds.
+        """
+        velocity = Twist()
+        velocity.linear.x = -speed
 
-if __name__ == '__main__':
-    rospy.init_node('test')
-    mover = Mover()
-    mover.go_left()
-    rospy.sleep(6)
-    mover.go_right()
+        for _ in range(time):
+            self.base_movement.publish(velocity)
+            rospy.sleep(0.1)
+
+        velocity = Twist()
+        self.base_movement.publish(velocity)
+
