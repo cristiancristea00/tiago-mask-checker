@@ -15,79 +15,73 @@ class Mover:
         """
         self.base_movement = rospy.Publisher('/mobile_base_controller/cmd_vel', Twist, queue_size = 15)
 
-    def go_left(self, speed: float, time: int):
+    def __move_until_goal_reached(self, speed: float, goal: float, velocity: Twist):
+        """
+        Internal class that moves the robot until the specified goal is reached.
+        """
+        time_0 = rospy.Time.now().to_sec()
+        current_goal = 0
+
+        while current_goal < goal:
+            self.base_movement.publish(velocity)
+            time_1 = rospy.Time.now().to_sec()
+            current_goal = speed * (time_1 - time_0)
+
+        velocity = Twist()
+        self.base_movement.publish(velocity)
+
+    def go_left(self, speed: float, distance: float):
         """
         Makes the robot go to the left by specifying the speed in meters per
-        second and the time in deciseconds.
+        second and the distance in meters.
         """
         self.rotate('counterclockwise', 90, 30)
-        self.go_forward(speed, time)
+        self.go('forward', speed, distance)
         self.rotate('clockwise', 90, 30)
 
-    def go_right(self, speed: float, time: int):
+    def go_right(self, speed: float, distance: float):
         """
         Makes the robot go to the right by specifying the speed in meters per
-        second and the time in deciseconds.
+        second and the distance in meters.
         """
         self.rotate('clockwise', 90, 30)
-        self.go_forward(speed, time)
+        self.go('forward', speed, distance)
         self.rotate('counterclockwise', 90, 30)
 
-    def rotate(self, rotation_type: str, angle: int, speed: int):
+    def rotate(self, rotation_type: str, angular_speed: float, angle: float):
         """
         Rotates the robot clockwise/counterclockwise by specifying the angle in
         degrees and the speed in degrees/sec.
         """
-        angular_speed = speed * 2 * pi / 360
-        relative_angle = angle * 2 * pi / 360
+        angular_speed = abs(angular_speed)
+        angular_speed = angular_speed * 2 * pi / 360
+        angle = angle * 2 * pi / 360
 
         velocity = Twist()
 
-        if rotation_type == 'clockwise':
-            velocity.angular.z = -abs(angular_speed)
-        elif rotation_type == 'counterclockwise':
-            velocity.angular.z = abs(angular_speed)
+        if rotation_type == 'counterclockwise':
+            velocity.angular.z = angular_speed
+        elif rotation_type == 'clockwise':
+            velocity.angular.z = -angular_speed
         else:
             raise TypeError(F'Unknown rotation type {rotation_type}.')
 
-        t_0 = rospy.Time.now().to_sec()
-        current_angle = 0
+        self.__move_until_goal_reached(angular_speed, angle, velocity)
 
-        while current_angle < relative_angle:
-            self.base_movement.publish(velocity)
-            t_1 = rospy.Time.now().to_sec()
-            current_angle = angular_speed * (t_1 - t_0)
-
-        velocity = Twist()
-        self.base_movement.publish(velocity)
-
-    def go_forward(self, speed: float, time: int):
+    def go(self, movement_type: str, speed: float, distance: float):
         """
-        Makes the robot go forward by specifying the speed in meters per second
-        and the time in deciseconds.
+        Makes the robot go forward/backward by specifying the speed in meters
+        per second and the distance in meters.
         """
-        velocity = Twist()
-        velocity.linear.x = speed
-
-        for _ in range(time):
-            self.base_movement.publish(velocity)
-            rospy.sleep(0.1)
+        speed = abs(speed)
 
         velocity = Twist()
-        self.base_movement.publish(velocity)
 
-    def go_back(self, speed: float, time: int):
-        """
-        Makes the robot go back by specifying the speed in meters per second and
-        the time in deciseconds.
-        """
-        velocity = Twist()
-        velocity.linear.x = -speed
+        if movement_type == 'forward':
+            velocity.linear.x = speed
+        elif movement_type == 'backward':
+            velocity.linear.x = -speed
+        else:
+            raise TypeError(F'Unknown movement type {movement_type}.')
 
-        for _ in range(time):
-            self.base_movement.publish(velocity)
-            rospy.sleep(0.1)
-
-        velocity = Twist()
-        self.base_movement.publish(velocity)
-
+        self.__move_until_goal_reached(speed, distance, velocity)
