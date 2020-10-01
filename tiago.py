@@ -144,6 +144,10 @@ def video():
                 reset(person_waiter, person_checker, tracker, temp_checker, looker)
                 looker = Looker()
                 current_state = 'waiting'
+            elif person_checker.lost_tracking:
+                reset(person_waiter, person_checker, tracker, temp_checker, looker)
+                looker = Looker()
+                current_state = 'waiting'
 
         frame = vstack((curr_normal, curr_thermal))
 

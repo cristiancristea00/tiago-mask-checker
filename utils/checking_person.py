@@ -41,7 +41,9 @@ class CheckingPerson(WaitingForPerson):
         self.state_time = state_time
         self.action_said = False
         self.mask_ok = False
+        self.lost_tracking = False
         self.last_said = None
+        self.last_track_time = None
 
     @staticmethod
     def prediction_type(prediction: Tuple[float, float, float, float]) -> Tuple[str, float]:
@@ -171,6 +173,11 @@ class CheckingPerson(WaitingForPerson):
         # Update tracker
         self.tracker.track_ok, self.bounding_box = self.tracker.update(image)
 
+        # Check if the tracking was lost
+        if self.last_track_time is not None and time() - self.last_track_time >= 4:
+            self.lost_tracking = True
+            return
+
         # For every frame decrease the counter
         if self.counter != 0:
             self.counter -= 1
@@ -187,6 +194,7 @@ class CheckingPerson(WaitingForPerson):
                 detector_center = get_center(((start_x, start_y), (end_x, end_y)))
                 # Check if the threshold value is met
                 if dist(tracker_center, detector_center) <= self.distance_threshold:
+                    self.last_track_time = time()
                     if self.move_time != 0:
                         self.move_time -= 1
                     self.bounding_box = points_to_point_and_dims((start_x, start_y, end_x, end_y))
