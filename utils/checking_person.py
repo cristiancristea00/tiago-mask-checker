@@ -10,6 +10,7 @@ from utils.waiting_for_person import WaitingForPerson
 from utils.geometry import *
 import cv2 as cv
 from time import time
+from utils.mover import Mover
 
 
 class CheckingPerson(WaitingForPerson):
@@ -29,7 +30,8 @@ class CheckingPerson(WaitingForPerson):
         correctly.
         """
         WaitingForPerson.__init__(self, tracker, face_mask, wait_counter_init)
-        self.default_predictions = {'with_mask': 0, 'with_mask_no_nose': 0, 'with_mask_under': 0, 'no_mask': 0}
+        self.default_predictions = {
+            'with_mask': 0, 'with_mask_no_nose': 0, 'with_mask_under': 0, 'no_mask': 0}
         self.predictions = self.default_predictions.copy()
         self.default_counter_init = counter_init
         self.default_move_time = move_time
@@ -51,7 +53,8 @@ class CheckingPerson(WaitingForPerson):
         Gets the prediction type by checking which is the max probability.
         """
         with_mask, with_mask_no_nose, with_mask_under, no_mask = prediction
-        probability = max(with_mask, with_mask_no_nose, with_mask_under, no_mask)
+        probability = max(with_mask, with_mask_no_nose,
+                          with_mask_under, no_mask)
         if probability == with_mask:
             return 'with_mask', probability
         elif probability == with_mask_no_nose:
@@ -72,7 +75,8 @@ class CheckingPerson(WaitingForPerson):
         for bounding_box, prediction in zip(locations, predictions):
             # Unpack the bounding box and predictions
             start_x, start_y, end_x, end_y = bounding_box
-            prediction_type, probability = CheckingPerson.prediction_type(prediction)
+            prediction_type, probability = CheckingPerson.prediction_type(
+                prediction)
             if prediction_type == 'with_mask':
                 label = 'Mask is OK'
                 color = (0, 255, 0)  # Green
@@ -90,7 +94,8 @@ class CheckingPerson(WaitingForPerson):
             label = f'{label}: {probability * 100:.2f}%'
 
             # Display the label and bounding box rectangle on the output frame
-            cv.putText(image, label, (start_x, start_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+            cv.putText(image, label, (start_x, start_y - 10),
+                       cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
             cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
             cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
 
@@ -105,10 +110,12 @@ class CheckingPerson(WaitingForPerson):
             cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
         else:
             # Tracking failure
-            cv.putText(image, 'Tracking failure detected!', (5, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            cv.putText(image, 'Tracking failure detected!', (5, 40),
+                       cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         # Display tracker type on frame
-        cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
+        cv.putText(image, tracker_type + ' Tracker', (5, 20),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
     def speak_message(self, prediction_type: str):
         """
@@ -135,6 +142,10 @@ class CheckingPerson(WaitingForPerson):
         if self.temp_checker.get_temp() <= 37.3:
             sound_file = 'temp_okay'
             self.talker.say(sound_file)
+            m = Mover()
+            m.go('backward', 1.0, 5)
+            rospy.sleep(6)
+            m.go('forward', 1.0, 1)
         else:
             sound_file = 'temp_too_high'
             self.talker.say(sound_file)
@@ -149,7 +160,7 @@ class CheckingPerson(WaitingForPerson):
         """
         Gets the maximum prediction.
         """
-        return max(self.predictions, key = self.predictions.get)
+        return max(self.predictions, key=self.predictions.get)
 
     def reset_predictions(self):
         """
@@ -188,25 +199,30 @@ class CheckingPerson(WaitingForPerson):
             # Reset the counter to the default value
             self.counter = self.default_counter_init
             # Get the tracker bounding box center
-            tracker_center = get_center(point_and_dims_to_points(self.bounding_box))
+            tracker_center = get_center(
+                point_and_dims_to_points(self.bounding_box))
             for box, prediction in zip(locations, predictions):
                 start_x, start_y, end_x, end_y = box
-                detector_center = get_center(((start_x, start_y), (end_x, end_y)))
+                detector_center = get_center(
+                    ((start_x, start_y), (end_x, end_y)))
                 # Check if the threshold value is met
                 if dist(tracker_center, detector_center) <= self.distance_threshold:
                     self.last_track_time = time()
                     if self.move_time != 0:
                         self.move_time -= 1
-                    self.bounding_box = points_to_point_and_dims((start_x, start_y, end_x, end_y))
+                    self.bounding_box = points_to_point_and_dims(
+                        (start_x, start_y, end_x, end_y))
                     # Reinitialize the tracker and make the robot look at person
                     # if the set number of frames has passed.
                     self.tracker.create_tracker()
-                    self.tracker.track_ok = self.tracker.init(image, self.bounding_box)
+                    self.tracker.track_ok = self.tracker.init(
+                        image, self.bounding_box)
                     if self.move_time == 0:
                         looker.point_head(detector_center, image_timestamp)
                         self.move_time = self.default_move_time
                     # Get the temperature for the current frame
-                    self.temp_checker.add_data(temp, start_x, start_y, end_x, end_y)
+                    self.temp_checker.add_data(
+                        temp, start_x, start_y, end_x, end_y)
                     # Add the prediction type
                     prediction_type, _ = self.prediction_type(prediction)
                     self.add_prediction(prediction_type)
@@ -231,7 +247,8 @@ class CheckingPerson(WaitingForPerson):
 
                     break
         # Draw the tracker bounding box
-        self.draw_tracker(self.tracker.track_ok, image, self.bounding_box, self.tracker.name)
+        self.draw_tracker(self.tracker.track_ok, image,
+                          self.bounding_box, self.tracker.name)
 
     def reset(self):
         """
@@ -244,7 +261,9 @@ class CheckingPerson(WaitingForPerson):
         self.reset_predictions()
 
     def person_in_frame(self):
-        raise AttributeError("'CheckingPerson' has no attribute named 'person_in_frame'")
+        raise AttributeError(
+            "'CheckingPerson' has no attribute named 'person_in_frame'")
 
     def run_prediction(self, image):
-        raise AttributeError("'CheckingPerson' has no attribute named 'run_prediction'")
+        raise AttributeError(
+            "'CheckingPerson' has no attribute named 'run_prediction'")
