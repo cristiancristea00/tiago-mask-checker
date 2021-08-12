@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from geometry_msgs.msg import Twist
 from math import pi
 import rospy

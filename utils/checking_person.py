@@ -94,8 +94,7 @@ class CheckingPerson(WaitingForPerson):
             label = f'{label}: {probability * 100:.2f}%'
 
             # Display the label and bounding box rectangle on the output frame
-            cv.putText(image, label, (start_x, start_y - 10),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
+            cv.putText(image, label, (start_x, start_y - 10), cv.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
             cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
             cv.rectangle(image, (start_x, start_y), (end_x, end_y), color, 2)
 
@@ -110,12 +109,10 @@ class CheckingPerson(WaitingForPerson):
             cv.rectangle(image, points[0], points[1], (232, 189, 19), 2, 1)
         else:
             # Tracking failure
-            cv.putText(image, 'Tracking failure detected!', (5, 40),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+            cv.putText(image, 'Tracking failure detected!', (5, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         # Display tracker type on frame
-        cv.putText(image, tracker_type + ' Tracker', (5, 20),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
+        cv.putText(image, tracker_type + ' Tracker', (5, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (50, 170, 50), 2)
 
     def speak_message(self, prediction_type: str):
         """
@@ -160,7 +157,7 @@ class CheckingPerson(WaitingForPerson):
         """
         Gets the maximum prediction.
         """
-        return max(self.predictions, key=self.predictions.get)
+        return max(self.predictions, key = self.predictions.get)
 
     def reset_predictions(self):
         """
@@ -203,8 +200,7 @@ class CheckingPerson(WaitingForPerson):
                 point_and_dims_to_points(self.bounding_box))
             for box, prediction in zip(locations, predictions):
                 start_x, start_y, end_x, end_y = box
-                detector_center = get_center(
-                    ((start_x, start_y), (end_x, end_y)))
+                detector_center = get_center(((start_x, start_y), (end_x, end_y)))
                 # Check if the threshold value is met
                 if dist(tracker_center, detector_center) <= self.distance_threshold:
                     self.last_track_time = time()
@@ -247,8 +243,7 @@ class CheckingPerson(WaitingForPerson):
 
                     break
         # Draw the tracker bounding box
-        self.draw_tracker(self.tracker.track_ok, image,
-                          self.bounding_box, self.tracker.name)
+        self.draw_tracker(self.tracker.track_ok, image, self.bounding_box, self.tracker.name)
 
     def reset(self):
         """
@@ -261,9 +256,7 @@ class CheckingPerson(WaitingForPerson):
         self.reset_predictions()
 
     def person_in_frame(self):
-        raise AttributeError(
-            "'CheckingPerson' has no attribute named 'person_in_frame'")
+        raise AttributeError("'CheckingPerson' has no attribute named 'person_in_frame'")
 
     def run_prediction(self, image):
-        raise AttributeError(
-            "'CheckingPerson' has no attribute named 'run_prediction'")
+        raise AttributeError("'CheckingPerson' has no attribute named 'run_prediction'")

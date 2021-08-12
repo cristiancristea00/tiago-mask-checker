@@ -16,7 +16,7 @@ class TemperatureChecker:
         Adds the temperature data from the forehead for the current frame.
         """
         with warnings.catch_warnings():
-            warnings.filterwarnings('ignore',category = RuntimeWarning)
+            warnings.filterwarnings('ignore', category = RuntimeWarning)
             t = np.mean(image[start_y + 15:end_y - 30, start_x + 14:end_x - 14] - 1000) / 10.0
             if t > 34:
                 self.temp_data.append(t)
